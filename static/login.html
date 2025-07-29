@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso - Gerador de Etiquetas ZPL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 2em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .access-info {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+            text-align: left;
+        }
+
+        .access-info h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .access-info ul {
+            margin-left: 20px;
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        .access-info li {
+            margin-bottom: 8px;
+        }
+
+        .manus-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .manus-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .benefits {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .benefits h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #34495e;
+        }
+
+        .benefit-item::before {
+            content: "✅";
+            margin-right: 10px;
+        }
+
+        .security-note {
+            background: #e8f5e8;
+            border: 1px solid #27ae60;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .title {
+                font-size: 1.5em;
+            }
+
+            .manus-btn {
+                width: 100%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🏷️</div>
+        <h1 class="title">Gerador de Etiquetas ZPL</h1>
+        <p class="subtitle">Acesso necessário para continuar</p>
+
+        <div class="access-info">
+            <h3>Como acessar:</h3>
+            <ul>
+                <li>Clique no botão abaixo para acessar a Manus</li>
+                <li>Faça login com sua conta Google ou email</li>
+                <li>Após o cadastro, você será redirecionado automaticamente</li>
+                <li>Comece a usar o gerador de etiquetas gratuitamente!</li>
+            </ul>
+        </div>
+
+        <a href="https://manus.im/invitation/MVLTSZVU2KPBWS" class="manus-btn" target="_blank">
+            🚀 Acessar via Manus
+        </a>
+
+        <button onclick="createDemoToken()" class="manus-btn" style="background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%); margin-top: 10px;">
+            🧪 Acesso Demo (Teste)
+        </button>
+
+        <div class="benefits">
+            <h4>Benefícios inclusos:</h4>
+            <div class="benefit-item">10 gerações gratuitas para testar</div>
+            <div class="benefit-item">Processamento em lotes de 50 etiquetas</div>
+            <div class="benefit-item">Separadores automáticos entre SKUs</div>
+            <div class="benefit-item">Download direto em PDF</div>
+            <div class="benefit-item">Suporte a impressoras térmicas Argox</div>
+        </div>
+
+        <div class="security-note">
+            🔒 Seus dados estão seguros. Utilizamos a plataforma Manus para autenticação segura.
+        </div>
+    </div>
+
+    <script>
+        // Verificar se o usuário já está autenticado
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token') || localStorage.getItem('auth_token');
+        
+        if (token) {
+            // Verificar token com o servidor
+            fetch('/api/verify-auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    localStorage.setItem('auth_token', token);
+                    window.location.href = '/app';
+                }
+            })
+            .catch(error => {
+                console.log('Token inválido, mantendo na página de login');
+            });
+        }
+
+        // Detectar retorno da Manus (simulação)
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'manus_auth_success') {
+                localStorage.setItem('auth_token', event.data.token);
+                window.location.href = '/app';
+            }
+        });
+
+        // Função para criar token de demonstração
+        async function createDemoToken() {
+            try {
+                const response = await fetch('/api/create-demo-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: 'demo@test.com' })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    localStorage.setItem('auth_token', data.token);
+                    window.location.href = '/app';
+                } else {
+                    alert('Erro ao criar acesso demo: ' + data.error);
+                }
+            } catch (error) {
+                alert('Erro de conexão: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
+
