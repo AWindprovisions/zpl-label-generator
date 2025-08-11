@@ -8,6 +8,7 @@ import base64
 from PyPDF2 import PdfMerger
 import uuid
 import time
+import re
 
 app = Flask(__name__)
 app.secret_key = 'zpl-generator-manus-2025'
@@ -171,6 +172,9 @@ MAIN_TEMPLATE = '''
             width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .stats { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .stats h4 { color: #856404; margin-bottom: 8px; }
+        .stats p { color: #856404; margin: 4px 0; }
     </style>
 </head>
 <body>
@@ -194,8 +198,9 @@ MAIN_TEMPLATE = '''
             <h3>📋 Como usar:</h3>
             <p>• Cole seu código ZPL no campo abaixo</p>
             <p>• Clique em "Gerar PDF" para processar</p>
-            <p>• O sistema processa até 50 etiquetas por vez</p>
+            <p>• O sistema processa automaticamente todas as etiquetas</p>
             <p>• Tamanho otimizado: 8 x 2,5 cm (impressoras Argox)</p>
+            <p>• Suporte a etiquetas múltiplas e layouts complexos</p>
         </div>
         <div class="main-card">
             <form id="zplForm">
@@ -215,6 +220,12 @@ MAIN_TEMPLATE = '''
                 <p id="resultMessage">Seu arquivo PDF foi gerado e está pronto para download.</p>
                 <div id="downloadSection" style="margin-top: 15px;">
                     <a id="downloadLink" href="#" class="download-btn">📥 Baixar PDF</a>
+                </div>
+                <div id="statsSection" class="stats" style="display: none;">
+                    <h4>📊 Estatísticas do Processamento:</h4>
+                    <p id="statsLabels">Etiquetas processadas: -</p>
+                    <p id="statsBlocks">Blocos ZPL detectados: -</p>
+                    <p id="statsSize">Tamanho do arquivo: -</p>
                 </div>
             </div>
         </div>
@@ -246,6 +257,16 @@ MAIN_TEMPLATE = '''
                     document.getElementById('downloadLink').download = 'etiquetas_zpl.pdf';
                     document.getElementById('result').className = 'result-card success';
                     document.getElementById('result').style.display = 'block';
+                    
+                    // Mostrar estatísticas
+                    const stats = response.headers.get('X-ZPL-Stats');
+                    if (stats) {
+                        const statsData = JSON.parse(stats);
+                        document.getElementById('statsLabels').textContent = `Etiquetas processadas: ${statsData.labels}`;
+                        document.getElementById('statsBlocks').textContent = `Blocos ZPL detectados: ${statsData.blocks}`;
+                        document.getElementById('statsSize').textContent = `Tamanho do arquivo: ${(blob.size / 1024).toFixed(1)} KB`;
+                        document.getElementById('statsSection').style.display = 'block';
+                    }
                 } else {
                     const error = await response.json();
                     document.getElementById('resultTitle').textContent = '❌ Erro ao Gerar PDF';
@@ -303,31 +324,58 @@ def generate_pdf():
         zpl_code = data.get('zpl_code', '').strip()
         if not zpl_code:
             return jsonify({'error': 'Código ZPL não fornecido'}), 400
-        zpl_commands = [cmd.strip() for cmd in zpl_code.split('^XZ') if cmd.strip()]
-        if not zpl_commands:
-            return jsonify({'error': 'Código ZPL inválido'}), 400
+        
+        # Contar blocos ZPL (^XA...^XZ)
+        zpl_blocks = re.findall(r'\^XA.*?\^XZ', zpl_code, re.DOTALL)
+        if not zpl_blocks:
+            return jsonify({'error': 'Código ZPL inválido - nenhum bloco ^XA...^XZ encontrado'}), 400
+        
+        # Contar etiquetas estimadas (baseado em posições ^FO)
+        fo_commands = re.findall(r'\^FO\d+,\d+', zpl_code)
+        estimated_labels = len(set(fo_commands))  # Posições únicas
+        
+        print(f"Processando {len(zpl_blocks)} blocos ZPL com ~{estimated_labels} etiquetas")
+        
+        # Processar em lotes se necessário
         pdf_merger = PdfMerger()
-        batch_size = 50
-        for i in range(0, len(zpl_commands), batch_size):
-            batch = zpl_commands[i:i+batch_size]
-            batch_zpl = ''
-            for cmd in batch:
-                if cmd:
-                    batch_zpl += cmd + '^XZ\n'
+        batch_size = 10  # Reduzido para evitar timeouts
+        
+        for i in range(0, len(zpl_blocks), batch_size):
+            batch = zpl_blocks[i:i+batch_size]
+            batch_zpl = ''.join(batch)
+            
+            print(f"Processando lote {i//batch_size + 1}: {len(batch)} blocos")
+            
             pdf_data = generate_pdf_via_labelary(batch_zpl)
             if pdf_data:
                 pdf_merger.append(io.BytesIO(pdf_data))
+            else:
+                print(f"Erro ao processar lote {i//batch_size + 1}")
+        
         output_buffer = io.BytesIO()
         pdf_merger.write(output_buffer)
         pdf_merger.close()
         output_buffer.seek(0)
-        return send_file(
+        
+        # Preparar resposta com estatísticas
+        response = send_file(
             output_buffer,
             as_attachment=True,
             download_name=f'etiquetas_zpl_{int(time.time())}.pdf',
             mimetype='application/pdf'
         )
+        
+        # Adicionar estatísticas no header
+        stats = {
+            'labels': estimated_labels,
+            'blocks': len(zpl_blocks)
+        }
+        response.headers['X-ZPL-Stats'] = str(stats).replace("'", '"')
+        
+        return response
+        
     except Exception as e:
+        print(f"Erro interno: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
 def generate_pdf_via_labelary(zpl_code):
@@ -337,7 +385,7 @@ def generate_pdf_via_labelary(zpl_code):
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/pdf'
         }
-        response = requests.post(url, data=zpl_code, headers=headers, timeout=30)
+        response = requests.post(url, data=zpl_code, headers=headers, timeout=60)
         if response.status_code == 200:
             return response.content
         else:
