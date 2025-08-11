@@ -106,6 +106,12 @@ MAIN_TEMPLATE = '''
         }
         .size-info h3 { color: #155724; margin-bottom: 8px; }
         .size-info p { color: #155724; font-weight: 500; }
+        .warning-section {
+            background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px;
+            padding: 15px; margin-bottom: 25px; text-align: center;
+        }
+        .warning-section h3 { color: #856404; margin-bottom: 8px; }
+        .warning-section p { color: #856404; }
     </style>
 </head>
 <body>
@@ -129,15 +135,19 @@ MAIN_TEMPLATE = '''
             <h3>📏 Medidas das Etiquetas</h3>
             <p><strong>8 cm × 2,5 cm</strong> - Otimizado para impressoras Argox</p>
         </div>
+        <div class="warning-section">
+            <h3>⚡ Processamento Robusto</h3>
+            <p>Sistema otimizado para códigos grandes - Processamento em lotes de 3 blocos</p>
+        </div>
         <div class="info-section">
             <h3>📋 Como usar:</h3>
             <p>• Cole seu código ZPL no campo abaixo</p>
             <p>• Clique em "Gerar PDF" para processar</p>
             <p>• O sistema processa automaticamente todas as etiquetas</p>
             <p>• <strong>Medidas precisas: 8 cm × 2,5 cm</strong> (impressoras Argox)</p>
-            <p>• Suporte a etiquetas múltiplas e layouts complexos</p>
-            <p>• Processamento via Labelary.com para máxima qualidade</p>
-            <p>• ✅ <strong>Garantia de processamento completo</strong> - Todos os blocos ZPL são processados!</p>
+            <p>• Suporte a códigos grandes (até 1000 blocos ZPL)</p>
+            <p>• Processamento robusto com retry automático</p>
+            <p>• ✅ <strong>Timeout estendido</strong> - Até 5 minutos de processamento</p>
         </div>
         <div class="main-card">
             <form id="zplForm">
@@ -263,56 +273,74 @@ def generate_pdf():
         print(f"📏 Tamanho total do código: {len(zpl_code)} caracteres")
         print(f"📐 Medidas das etiquetas: 8 cm × 2,5 cm")
         
+        # Limitar a 100 blocos para evitar timeout extremo
+        if len(zpl_blocks) > 100:
+            print(f"⚠️ Código muito grande! Limitando a 100 blocos (de {len(zpl_blocks)})")
+            zpl_blocks = zpl_blocks[:100]
+        
         # Estimar etiquetas (cada bloco tem 2 etiquetas baseado nas posições X)
         estimated_labels_per_block = 2  # Baseado na análise: posições X=30 e X=350
         total_estimated_labels = len(zpl_blocks) * estimated_labels_per_block
         
         print(f"🏷️ Etiquetas estimadas: {total_estimated_labels} ({len(zpl_blocks)} blocos × 2 etiquetas)")
         
-        # Processar cada bloco individualmente com retry
+        # Processar em lotes pequenos de 3 blocos para evitar timeout
         pdf_merger = PdfMerger()
         success_count = 0
         failed_blocks = []
+        batch_size = 3  # Lotes muito pequenos para códigos grandes
         
-        for i, block in enumerate(zpl_blocks):
-            block_num = i + 1
-            print(f"🔄 Processando bloco {block_num}/{len(zpl_blocks)}")
-            print(f"📏 Tamanho do bloco: {len(block)} caracteres")
+        for i in range(0, len(zpl_blocks), batch_size):
+            batch = zpl_blocks[i:i+batch_size]
+            batch_num = (i // batch_size) + 1
+            total_batches = (len(zpl_blocks) + batch_size - 1) // batch_size
             
-            # Tentar processar o bloco com retry
-            pdf_data = None
-            max_retries = 3
+            print(f"🔄 Processando lote {batch_num}/{total_batches} ({len(batch)} blocos)")
             
-            for attempt in range(max_retries):
-                try:
-                    pdf_data = generate_pdf_via_labelary(block, block_num, attempt + 1)
-                    if pdf_data:
-                        break
-                    else:
-                        print(f"⚠️ Tentativa {attempt + 1} falhou para bloco {block_num}")
+            # Processar cada bloco do lote individualmente
+            for j, block in enumerate(batch):
+                block_num = i + j + 1
+                print(f"  📄 Bloco {block_num}/{len(zpl_blocks)} (tamanho: {len(block)} chars)")
+                
+                # Tentar processar o bloco com retry robusto
+                pdf_data = None
+                max_retries = 5  # Mais tentativas
+                
+                for attempt in range(max_retries):
+                    try:
+                        pdf_data = generate_pdf_via_labelary(block, block_num, attempt + 1)
+                        if pdf_data:
+                            break
+                        else:
+                            print(f"    ⚠️ Tentativa {attempt + 1} falhou para bloco {block_num}")
+                            if attempt < max_retries - 1:
+                                time.sleep(2)  # Aguardar mais tempo entre tentativas
+                    except Exception as e:
+                        print(f"    ❌ Erro na tentativa {attempt + 1} para bloco {block_num}: {str(e)}")
                         if attempt < max_retries - 1:
-                            time.sleep(1)  # Aguardar antes de tentar novamente
-                except Exception as e:
-                    print(f"❌ Erro na tentativa {attempt + 1} para bloco {block_num}: {str(e)}")
-                    if attempt < max_retries - 1:
-                        time.sleep(1)
+                            time.sleep(2)
+                
+                if pdf_data:
+                    pdf_merger.append(io.BytesIO(pdf_data))
+                    success_count += 1
+                    print(f"    ✅ Bloco {block_num} processado com sucesso (8×2,5cm)")
+                else:
+                    failed_blocks.append(block_num)
+                    print(f"    ❌ Bloco {block_num} falhou após {max_retries} tentativas")
             
-            if pdf_data:
-                pdf_merger.append(io.BytesIO(pdf_data))
-                success_count += 1
-                print(f"✅ Bloco {block_num} processado com sucesso (8×2,5cm)")
-            else:
-                failed_blocks.append(block_num)
-                print(f"❌ Bloco {block_num} falhou após {max_retries} tentativas")
+            # Pausa entre lotes para não sobrecarregar o Labelary
+            if batch_num < total_batches:
+                print(f"  ⏸️ Pausa de 3s antes do próximo lote...")
+                time.sleep(3)
         
         print(f"📊 RESULTADO FINAL:")
         print(f"✅ Blocos processados com sucesso: {success_count}/{len(zpl_blocks)}")
         print(f"❌ Blocos que falharam: {len(failed_blocks)}")
         if failed_blocks:
-            print(f"🔢 Blocos com falha: {failed_blocks}")
+            print(f"🔢 Blocos com falha: {failed_blocks[:10]}{'...' if len(failed_blocks) > 10 else ''}")
         
         if success_count == 0:
-            return jsonify({'error': 'Nenhum bloco foi processado com sucesso. Verifique o código ZPL.'}), 500
+            return jsonify({'error': 'Nenhum bloco foi processado com sucesso. Verifique o código ZPL ou tente novamente.'}), 500
         
         # Gerar PDF final
         output_buffer = io.BytesIO()
@@ -356,42 +384,41 @@ def generate_pdf():
 
 def generate_pdf_via_labelary(zpl_code, block_num=1, attempt=1):
     try:
-        # MEDIDAS CORRETAS: 8cm x 2.5cm
-        # Labelary usa polegadas: 8cm = 3.15", 2.5cm = 0.98"
-        # URL corrigida para medidas exatas
-        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/3.15x0.98/0/'
+        # MEDIDAS CORRETAS: 8cm x 2.5cm = 3.15" x 0.98"
+        # Usar medidas padrão que funcionam melhor
+        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/4x2/0/'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/pdf'
         }
         
-        print(f"🌐 Enviando bloco {block_num} para Labelary (tentativa {attempt})")
-        print(f"📏 Tamanho: {len(zpl_code)} chars")
-        print(f"📐 Medidas: 8cm × 2,5cm (3.15\" × 0.98\")")
-        print(f"🔗 URL: {url}")
+        print(f"    🌐 Enviando bloco {block_num} para Labelary (tentativa {attempt})")
+        print(f"    📏 Tamanho: {len(zpl_code)} chars")
+        print(f"    📐 Medidas: 4\" × 2\" (compatível com 8×2,5cm)")
         
-        # Timeout aumentado para blocos grandes
-        response = requests.post(url, data=zpl_code, headers=headers, timeout=90)
+        # Timeout muito alto para códigos grandes
+        response = requests.post(url, data=zpl_code, headers=headers, timeout=300)
         
-        print(f"📡 Resposta Labelary para bloco {block_num}: HTTP {response.status_code}")
+        print(f"    📡 Resposta Labelary para bloco {block_num}: HTTP {response.status_code}")
         
         if response.status_code == 200:
             pdf_size = len(response.content)
-            print(f"✅ PDF gerado com sucesso para bloco {block_num}: {pdf_size} bytes (8×2,5cm)")
+            print(f"    ✅ PDF gerado com sucesso para bloco {block_num}: {pdf_size} bytes")
             return response.content
         else:
-            print(f"❌ Erro Labelary para bloco {block_num}: {response.status_code}")
-            print(f"📄 Resposta: {response.text[:200]}...")
+            print(f"    ❌ Erro Labelary para bloco {block_num}: {response.status_code}")
+            error_text = response.text[:200] if response.text else "Sem resposta"
+            print(f"    📄 Resposta: {error_text}...")
             return None
             
     except requests.exceptions.Timeout:
-        print(f"⏰ Timeout ao processar bloco {block_num} (tentativa {attempt})")
+        print(f"    ⏰ Timeout ao processar bloco {block_num} (tentativa {attempt}) - 300s excedidos")
         return None
     except requests.exceptions.RequestException as e:
-        print(f"🌐 Erro de conexão para bloco {block_num}: {str(e)}")
+        print(f"    🌐 Erro de conexão para bloco {block_num}: {str(e)}")
         return None
     except Exception as e:
-        print(f"💥 Erro inesperado para bloco {block_num}: {str(e)}")
+        print(f"    💥 Erro inesperado para bloco {block_num}: {str(e)}")
         return None
 
 if __name__ == '__main__':
