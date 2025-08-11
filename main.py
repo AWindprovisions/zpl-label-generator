@@ -91,6 +91,9 @@ MAIN_TEMPLATE = '''
         .stats { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px; padding: 15px; margin-top: 15px; }
         .stats h4 { color: #856404; margin-bottom: 8px; }
         .stats p { color: #856404; margin: 4px 0; }
+        .debug { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .debug h4 { color: #495057; margin-bottom: 8px; }
+        .debug p { color: #495057; margin: 4px 0; font-family: monospace; }
         .welcome-section {
             background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 10px; 
             padding: 20px; margin-bottom: 25px; text-align: center;
@@ -144,6 +147,13 @@ MAIN_TEMPLATE = '''
                 <div id="downloadSection" style="margin-top: 15px;">
                     <a id="downloadLink" href="#" class="download-btn">📥 Baixar PDF</a>
                 </div>
+                <div id="debugSection" class="debug" style="display: none;">
+                    <h4>🔧 Debug Info:</h4>
+                    <p id="debugBlocks">Blocos detectados: -</p>
+                    <p id="debugLabels">Etiquetas estimadas: -</p>
+                    <p id="debugBatches">Lotes processados: -</p>
+                    <p id="debugSize">Tamanho total: -</p>
+                </div>
                 <div id="statsSection" class="stats" style="display: none;">
                     <h4>📊 Estatísticas do Processamento:</h4>
                     <p id="statsLabels">Etiquetas processadas: -</p>
@@ -181,6 +191,17 @@ MAIN_TEMPLATE = '''
                     document.getElementById('downloadLink').download = 'etiquetas_zpl.pdf';
                     document.getElementById('result').className = 'result-card success';
                     document.getElementById('result').style.display = 'block';
+                    
+                    // Mostrar debug info
+                    const debug = response.headers.get('X-ZPL-Debug');
+                    if (debug) {
+                        const debugData = JSON.parse(debug);
+                        document.getElementById('debugBlocks').textContent = `Blocos detectados: ${debugData.blocks}`;
+                        document.getElementById('debugLabels').textContent = `Etiquetas estimadas: ${debugData.labels}`;
+                        document.getElementById('debugBatches').textContent = `Lotes processados: ${debugData.batches}`;
+                        document.getElementById('debugSize').textContent = `Tamanho total: ${debugData.total_size} chars`;
+                        document.getElementById('debugSection').style.display = 'block';
+                    }
                     
                     // Mostrar estatísticas
                     const stats = response.headers.get('X-ZPL-Stats');
@@ -237,36 +258,50 @@ def generate_pdf():
         fo_commands = re.findall(r'\^FO\d+,\d+', zpl_code)
         estimated_labels = len(set(fo_commands))  # Posições únicas
         
-        print(f"Processando {len(zpl_blocks)} blocos ZPL com ~{estimated_labels} etiquetas")
+        print(f"DEBUG: Processando {len(zpl_blocks)} blocos ZPL com ~{estimated_labels} etiquetas")
+        print(f"DEBUG: Tamanho total do código: {len(zpl_code)} caracteres")
         
-        # Processar em lotes se necessário
+        # NOVA ESTRATÉGIA: Processar cada bloco individualmente
         pdf_merger = PdfMerger()
-        batch_size = 10  # Reduzido para evitar timeouts
+        batches_processed = 0
         
-        for i in range(0, len(zpl_blocks), batch_size):
-            batch = zpl_blocks[i:i+batch_size]
-            batch_zpl = ''.join(batch)
+        for i, block in enumerate(zpl_blocks):
+            print(f"DEBUG: Processando bloco {i+1}/{len(zpl_blocks)}")
+            print(f"DEBUG: Tamanho do bloco: {len(block)} chars")
             
-            print(f"Processando lote {i//batch_size + 1}: {len(batch)} blocos")
-            
-            pdf_data = generate_pdf_via_labelary(batch_zpl)
+            # Processar cada bloco individualmente
+            pdf_data = generate_pdf_via_labelary(block)
             if pdf_data:
                 pdf_merger.append(io.BytesIO(pdf_data))
+                batches_processed += 1
+                print(f"DEBUG: Bloco {i+1} processado com sucesso")
             else:
-                print(f"Erro ao processar lote {i//batch_size + 1}")
+                print(f"DEBUG: Erro ao processar bloco {i+1}")
+        
+        if batches_processed == 0:
+            return jsonify({'error': 'Nenhum bloco foi processado com sucesso'}), 500
         
         output_buffer = io.BytesIO()
         pdf_merger.write(output_buffer)
         pdf_merger.close()
         output_buffer.seek(0)
         
-        # Preparar resposta com estatísticas
+        # Preparar resposta com debug info
         response = send_file(
             output_buffer,
             as_attachment=True,
             download_name=f'etiquetas_zpl_{int(time.time())}.pdf',
             mimetype='application/pdf'
         )
+        
+        # Adicionar debug info no header
+        debug_info = {
+            'blocks': len(zpl_blocks),
+            'labels': estimated_labels,
+            'batches': batches_processed,
+            'total_size': len(zpl_code)
+        }
+        response.headers['X-ZPL-Debug'] = str(debug_info).replace("'", '"')
         
         # Adicionar estatísticas no header
         stats = {
@@ -283,13 +318,22 @@ def generate_pdf():
 
 def generate_pdf_via_labelary(zpl_code):
     try:
-        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/3.15x0.98/0/'
+        # Usar tamanho de página que acomoda múltiplas etiquetas
+        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/8x2.5/0/'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/pdf'
         }
+        
+        print(f"DEBUG: Enviando para Labelary: {len(zpl_code)} chars")
+        print(f"DEBUG: URL: {url}")
+        
         response = requests.post(url, data=zpl_code, headers=headers, timeout=60)
+        
+        print(f"DEBUG: Resposta Labelary: {response.status_code}")
+        
         if response.status_code == 200:
+            print(f"DEBUG: PDF gerado com sucesso: {len(response.content)} bytes")
             return response.content
         else:
             print(f"Erro Labelary: {response.status_code} - {response.text}")
