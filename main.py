@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template_string, jsonify, send_file, session, redirect, url_for
+from flask import Flask, request, render_template_string, jsonify, send_file
 from flask_cors import CORS
 import os
 import tempfile
@@ -11,86 +11,9 @@ import time
 import re
 
 app = Flask(__name__)
-app.secret_key = 'zpl-generator-manus-2025'
 CORS(app)
 
-# Template HTML de Login Manus
-LOGIN_TEMPLATE = '''
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZPL Generator - Login Manus</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-        }
-        .logo { font-size: 48px; margin-bottom: 10px; }
-        .title { font-size: 28px; color: #333; margin-bottom: 10px; font-weight: 600; }
-        .subtitle { color: #666; margin-bottom: 30px; font-size: 16px; }
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
-        input[type="email"], input[type="password"] {
-            width: 100%; padding: 15px; border: 2px solid #e1e5e9;
-            border-radius: 10px; font-size: 16px; transition: border-color 0.3s;
-        }
-        input[type="email"]:focus, input[type="password"]:focus {
-            outline: none; border-color: #667eea;
-        }
-        .login-btn {
-            width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 15px; border: none; border-radius: 10px;
-            font-size: 18px; font-weight: 600; cursor: pointer; transition: transform 0.2s;
-        }
-        .login-btn:hover { transform: translateY(-2px); }
-        .footer { margin-top: 30px; color: #666; font-size: 14px; }
-        .manus-link { color: #667eea; text-decoration: none; font-weight: 500; }
-        .error { background: #fee; color: #c33; padding: 10px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #fcc; }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="logo">🏷️</div>
-        <h1 class="title">ZPL Generator</h1>
-        <p class="subtitle">Acesso via Manus AI</p>
-        {% if error %}<div class="error">{{ error }}</div>{% endif %}
-        <form method="POST">
-            <div class="form-group">
-                <label for="email">Email Manus:</label>
-                <input type="email" id="email" name="email" required placeholder="seu@email.com">
-            </div>
-            <div class="form-group">
-                <label for="password">Senha:</label>
-                <input type="password" id="password" name="password" required placeholder="Sua senha">
-            </div>
-            <button type="submit" class="login-btn">🚀 Entrar no ZPL Generator</button>
-        </form>
-        <div class="footer">
-            <p>Desenvolvido com <a href="https://manus.ai" class="manus-link">Manus AI</a></p>
-            <p>🌟 Tecnologia de ponta para geração de etiquetas</p>
-        </div>
-    </div>
-</body>
-</html>
-'''
-
-# Template HTML Principal
+# Template HTML Principal (sem login)
 MAIN_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -110,19 +33,12 @@ MAIN_TEMPLATE = '''
         }
         .header-content {
             max-width: 1200px; margin: 0 auto; padding: 0 20px;
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
         .logo-section { display: flex; align-items: center; gap: 15px; }
         .logo { font-size: 36px; }
         .title-section h1 { font-size: 28px; font-weight: 600; }
         .title-section p { opacity: 0.9; font-size: 16px; }
-        .user-section { text-align: right; }
-        .logout-btn {
-            background: rgba(255,255,255,0.2); color: white; padding: 8px 16px;
-            border: 1px solid rgba(255,255,255,0.3); border-radius: 20px;
-            text-decoration: none; font-size: 14px; transition: background 0.3s;
-        }
-        .logout-btn:hover { background: rgba(255,255,255,0.3); }
         .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
         .main-card {
             background: white; border-radius: 15px; padding: 30px;
@@ -175,6 +91,12 @@ MAIN_TEMPLATE = '''
         .stats { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px; padding: 15px; margin-top: 15px; }
         .stats h4 { color: #856404; margin-bottom: 8px; }
         .stats p { color: #856404; margin: 4px 0; }
+        .welcome-section {
+            background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 10px; 
+            padding: 20px; margin-bottom: 25px; text-align: center;
+        }
+        .welcome-section h2 { color: #0c5460; margin-bottom: 10px; }
+        .welcome-section p { color: #0c5460; }
     </style>
 </head>
 <body>
@@ -187,13 +109,13 @@ MAIN_TEMPLATE = '''
                     <p>Gerador Profissional de Etiquetas ZPL</p>
                 </div>
             </div>
-            <div class="user-section">
-                <p>👤 {{ user_email }}</p>
-                <a href="/logout" class="logout-btn">🚪 Sair</a>
-            </div>
         </div>
     </header>
     <div class="container">
+        <div class="welcome-section">
+            <h2>🚀 Bem-vindo ao ZPL Generator!</h2>
+            <p>Converta seus códigos ZPL em PDFs profissionais de forma rápida e gratuita</p>
+        </div>
         <div class="info-section">
             <h3>📋 Como usar:</h3>
             <p>• Cole seu código ZPL no campo abaixo</p>
@@ -201,6 +123,7 @@ MAIN_TEMPLATE = '''
             <p>• O sistema processa automaticamente todas as etiquetas</p>
             <p>• Tamanho otimizado: 8 x 2,5 cm (impressoras Argox)</p>
             <p>• Suporte a etiquetas múltiplas e layouts complexos</p>
+            <p>• Processamento via Labelary.com para máxima qualidade</p>
         </div>
         <div class="main-card">
             <form id="zplForm">
@@ -234,6 +157,7 @@ MAIN_TEMPLATE = '''
         <p>💡 Desenvolvido com <strong>Manus AI</strong></p>
         <p>🚀 Hospedado com Railway - Disponível 24/7</p>
         <p>🔧 Processamento via Labelary.com para máxima qualidade</p>
+        <p>🆓 Acesso livre e gratuito para todos</p>
     </footer>
     <script>
         document.getElementById('zplForm').addEventListener('submit', async function(e) {
@@ -294,31 +218,10 @@ MAIN_TEMPLATE = '''
 
 @app.route('/')
 def index():
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
-    return render_template_string(MAIN_TEMPLATE, user_email=session['user_email'])
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '').strip()
-        if email and password and '@' in email:
-            session['user_email'] = email
-            return redirect(url_for('index'))
-        else:
-            return render_template_string(LOGIN_TEMPLATE, error="Email ou senha inválidos")
-    return render_template_string(LOGIN_TEMPLATE)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
+    return render_template_string(MAIN_TEMPLATE)
 
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf():
-    if 'user_email' not in session:
-        return jsonify({'error': 'Não autenticado'}), 401
     try:
         data = request.get_json()
         zpl_code = data.get('zpl_code', '').strip()
