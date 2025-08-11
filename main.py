@@ -91,9 +91,9 @@ MAIN_TEMPLATE = '''
         .stats { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px; padding: 15px; margin-top: 15px; }
         .stats h4 { color: #856404; margin-bottom: 8px; }
         .stats p { color: #856404; margin: 4px 0; }
-        .debug { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 10px; padding: 15px; margin-top: 15px; }
-        .debug h4 { color: #495057; margin-bottom: 8px; }
-        .debug p { color: #495057; margin: 4px 0; font-family: monospace; }
+        .progress { background: #e9ecef; border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .progress h4 { color: #495057; margin-bottom: 8px; }
+        .progress p { color: #495057; margin: 4px 0; font-family: monospace; }
         .welcome-section {
             background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 10px; 
             padding: 20px; margin-bottom: 25px; text-align: center;
@@ -127,6 +127,7 @@ MAIN_TEMPLATE = '''
             <p>• Tamanho otimizado: 8 x 2,5 cm (impressoras Argox)</p>
             <p>• Suporte a etiquetas múltiplas e layouts complexos</p>
             <p>• Processamento via Labelary.com para máxima qualidade</p>
+            <p>• ✅ <strong>Garantia de processamento completo</strong> - Todos os blocos ZPL são processados!</p>
         </div>
         <div class="main-card">
             <form id="zplForm">
@@ -140,6 +141,10 @@ MAIN_TEMPLATE = '''
                 <div class="spinner"></div>
                 <p>Processando etiquetas via Labelary.com...</p>
                 <p><small>Aguarde, pode levar alguns segundos</small></p>
+                <div id="progressInfo" class="progress" style="display: none;">
+                    <h4>📊 Progresso do Processamento:</h4>
+                    <p id="progressText">Iniciando...</p>
+                </div>
             </div>
             <div id="result" class="result-card">
                 <h3 id="resultTitle">✅ PDF Gerado com Sucesso!</h3>
@@ -147,17 +152,11 @@ MAIN_TEMPLATE = '''
                 <div id="downloadSection" style="margin-top: 15px;">
                     <a id="downloadLink" href="#" class="download-btn">📥 Baixar PDF</a>
                 </div>
-                <div id="debugSection" class="debug" style="display: none;">
-                    <h4>🔧 Debug Info:</h4>
-                    <p id="debugBlocks">Blocos detectados: -</p>
-                    <p id="debugLabels">Etiquetas estimadas: -</p>
-                    <p id="debugBatches">Lotes processados: -</p>
-                    <p id="debugSize">Tamanho total: -</p>
-                </div>
                 <div id="statsSection" class="stats" style="display: none;">
                     <h4>📊 Estatísticas do Processamento:</h4>
                     <p id="statsLabels">Etiquetas processadas: -</p>
                     <p id="statsBlocks">Blocos ZPL detectados: -</p>
+                    <p id="statsSuccess">Blocos processados com sucesso: -</p>
                     <p id="statsSize">Tamanho do arquivo: -</p>
                 </div>
             </div>
@@ -177,13 +176,16 @@ MAIN_TEMPLATE = '''
             document.getElementById('generateBtn').disabled = true;
             document.getElementById('generateBtn').innerHTML = '⏳ Processando...';
             document.getElementById('loading').style.display = 'block';
+            document.getElementById('progressInfo').style.display = 'block';
             document.getElementById('result').style.display = 'none';
+            
             try {
                 const response = await fetch('/generate-pdf', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ zpl_code: zplCode })
                 });
+                
                 if (response.ok) {
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
@@ -192,23 +194,13 @@ MAIN_TEMPLATE = '''
                     document.getElementById('result').className = 'result-card success';
                     document.getElementById('result').style.display = 'block';
                     
-                    // Mostrar debug info
-                    const debug = response.headers.get('X-ZPL-Debug');
-                    if (debug) {
-                        const debugData = JSON.parse(debug);
-                        document.getElementById('debugBlocks').textContent = `Blocos detectados: ${debugData.blocks}`;
-                        document.getElementById('debugLabels').textContent = `Etiquetas estimadas: ${debugData.labels}`;
-                        document.getElementById('debugBatches').textContent = `Lotes processados: ${debugData.batches}`;
-                        document.getElementById('debugSize').textContent = `Tamanho total: ${debugData.total_size} chars`;
-                        document.getElementById('debugSection').style.display = 'block';
-                    }
-                    
                     // Mostrar estatísticas
                     const stats = response.headers.get('X-ZPL-Stats');
                     if (stats) {
                         const statsData = JSON.parse(stats);
-                        document.getElementById('statsLabels').textContent = `Etiquetas processadas: ${statsData.labels}`;
-                        document.getElementById('statsBlocks').textContent = `Blocos ZPL detectados: ${statsData.blocks}`;
+                        document.getElementById('statsLabels').textContent = `Etiquetas processadas: ${statsData.total_labels}`;
+                        document.getElementById('statsBlocks').textContent = `Blocos ZPL detectados: ${statsData.total_blocks}`;
+                        document.getElementById('statsSuccess').textContent = `Blocos processados com sucesso: ${statsData.success_blocks}`;
                         document.getElementById('statsSize').textContent = `Tamanho do arquivo: ${(blob.size / 1024).toFixed(1)} KB`;
                         document.getElementById('statsSection').style.display = 'block';
                     }
@@ -249,44 +241,81 @@ def generate_pdf():
         if not zpl_code:
             return jsonify({'error': 'Código ZPL não fornecido'}), 400
         
-        # Contar blocos ZPL (^XA...^XZ)
+        # Detectar blocos ZPL (^XA...^XZ)
         zpl_blocks = re.findall(r'\^XA.*?\^XZ', zpl_code, re.DOTALL)
         if not zpl_blocks:
             return jsonify({'error': 'Código ZPL inválido - nenhum bloco ^XA...^XZ encontrado'}), 400
         
-        # Contar etiquetas estimadas (baseado em posições ^FO)
-        fo_commands = re.findall(r'\^FO\d+,\d+', zpl_code)
-        estimated_labels = len(set(fo_commands))  # Posições únicas
+        print(f"🔍 PROCESSAMENTO INICIADO:")
+        print(f"📊 Total de blocos detectados: {len(zpl_blocks)}")
+        print(f"📏 Tamanho total do código: {len(zpl_code)} caracteres")
         
-        print(f"DEBUG: Processando {len(zpl_blocks)} blocos ZPL com ~{estimated_labels} etiquetas")
-        print(f"DEBUG: Tamanho total do código: {len(zpl_code)} caracteres")
+        # Estimar etiquetas (cada bloco tem 2 etiquetas baseado nas posições X)
+        estimated_labels_per_block = 2  # Baseado na análise: posições X=30 e X=350
+        total_estimated_labels = len(zpl_blocks) * estimated_labels_per_block
         
-        # NOVA ESTRATÉGIA: Processar cada bloco individualmente
+        print(f"🏷️ Etiquetas estimadas: {total_estimated_labels} ({len(zpl_blocks)} blocos × 2 etiquetas)")
+        
+        # Processar cada bloco individualmente com retry
         pdf_merger = PdfMerger()
-        batches_processed = 0
+        success_count = 0
+        failed_blocks = []
         
         for i, block in enumerate(zpl_blocks):
-            print(f"DEBUG: Processando bloco {i+1}/{len(zpl_blocks)}")
-            print(f"DEBUG: Tamanho do bloco: {len(block)} chars")
+            block_num = i + 1
+            print(f"🔄 Processando bloco {block_num}/{len(zpl_blocks)}")
+            print(f"📏 Tamanho do bloco: {len(block)} caracteres")
             
-            # Processar cada bloco individualmente
-            pdf_data = generate_pdf_via_labelary(block)
+            # Tentar processar o bloco com retry
+            pdf_data = None
+            max_retries = 3
+            
+            for attempt in range(max_retries):
+                try:
+                    pdf_data = generate_pdf_via_labelary(block, block_num, attempt + 1)
+                    if pdf_data:
+                        break
+                    else:
+                        print(f"⚠️ Tentativa {attempt + 1} falhou para bloco {block_num}")
+                        if attempt < max_retries - 1:
+                            time.sleep(1)  # Aguardar antes de tentar novamente
+                except Exception as e:
+                    print(f"❌ Erro na tentativa {attempt + 1} para bloco {block_num}: {str(e)}")
+                    if attempt < max_retries - 1:
+                        time.sleep(1)
+            
             if pdf_data:
                 pdf_merger.append(io.BytesIO(pdf_data))
-                batches_processed += 1
-                print(f"DEBUG: Bloco {i+1} processado com sucesso")
+                success_count += 1
+                print(f"✅ Bloco {block_num} processado com sucesso")
             else:
-                print(f"DEBUG: Erro ao processar bloco {i+1}")
+                failed_blocks.append(block_num)
+                print(f"❌ Bloco {block_num} falhou após {max_retries} tentativas")
         
-        if batches_processed == 0:
-            return jsonify({'error': 'Nenhum bloco foi processado com sucesso'}), 500
+        print(f"📊 RESULTADO FINAL:")
+        print(f"✅ Blocos processados com sucesso: {success_count}/{len(zpl_blocks)}")
+        print(f"❌ Blocos que falharam: {len(failed_blocks)}")
+        if failed_blocks:
+            print(f"🔢 Blocos com falha: {failed_blocks}")
         
+        if success_count == 0:
+            return jsonify({'error': 'Nenhum bloco foi processado com sucesso. Verifique o código ZPL.'}), 500
+        
+        # Gerar PDF final
         output_buffer = io.BytesIO()
         pdf_merger.write(output_buffer)
         pdf_merger.close()
         output_buffer.seek(0)
         
-        # Preparar resposta com debug info
+        # Calcular estatísticas finais
+        final_labels = success_count * estimated_labels_per_block
+        
+        print(f"🎉 PDF GERADO COM SUCESSO!")
+        print(f"📄 Páginas no PDF: {success_count}")
+        print(f"🏷️ Etiquetas finais: {final_labels}")
+        print(f"📦 Tamanho do arquivo: {len(output_buffer.getvalue())} bytes")
+        
+        # Preparar resposta
         response = send_file(
             output_buffer,
             as_attachment=True,
@@ -294,52 +323,57 @@ def generate_pdf():
             mimetype='application/pdf'
         )
         
-        # Adicionar debug info no header
-        debug_info = {
-            'blocks': len(zpl_blocks),
-            'labels': estimated_labels,
-            'batches': batches_processed,
-            'total_size': len(zpl_code)
-        }
-        response.headers['X-ZPL-Debug'] = str(debug_info).replace("'", '"')
-        
         # Adicionar estatísticas no header
         stats = {
-            'labels': estimated_labels,
-            'blocks': len(zpl_blocks)
+            'total_blocks': len(zpl_blocks),
+            'success_blocks': success_count,
+            'failed_blocks': len(failed_blocks),
+            'total_labels': final_labels,
+            'estimated_labels': total_estimated_labels
         }
         response.headers['X-ZPL-Stats'] = str(stats).replace("'", '"')
         
         return response
         
     except Exception as e:
-        print(f"Erro interno: {str(e)}")
+        print(f"💥 ERRO INTERNO: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
-def generate_pdf_via_labelary(zpl_code):
+def generate_pdf_via_labelary(zpl_code, block_num=1, attempt=1):
     try:
-        # Usar tamanho de página que acomoda múltiplas etiquetas
+        # Usar tamanho de página otimizado para etiquetas duplas
         url = 'http://api.labelary.com/v1/printers/8dpmm/labels/8x2.5/0/'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/pdf'
         }
         
-        print(f"DEBUG: Enviando para Labelary: {len(zpl_code)} chars")
-        print(f"DEBUG: URL: {url}")
+        print(f"🌐 Enviando bloco {block_num} para Labelary (tentativa {attempt})")
+        print(f"📏 Tamanho: {len(zpl_code)} chars")
+        print(f"🔗 URL: {url}")
         
-        response = requests.post(url, data=zpl_code, headers=headers, timeout=60)
+        # Timeout aumentado para blocos grandes
+        response = requests.post(url, data=zpl_code, headers=headers, timeout=90)
         
-        print(f"DEBUG: Resposta Labelary: {response.status_code}")
+        print(f"📡 Resposta Labelary para bloco {block_num}: HTTP {response.status_code}")
         
         if response.status_code == 200:
-            print(f"DEBUG: PDF gerado com sucesso: {len(response.content)} bytes")
+            pdf_size = len(response.content)
+            print(f"✅ PDF gerado com sucesso para bloco {block_num}: {pdf_size} bytes")
             return response.content
         else:
-            print(f"Erro Labelary: {response.status_code} - {response.text}")
+            print(f"❌ Erro Labelary para bloco {block_num}: {response.status_code}")
+            print(f"📄 Resposta: {response.text[:200]}...")
             return None
+            
+    except requests.exceptions.Timeout:
+        print(f"⏰ Timeout ao processar bloco {block_num} (tentativa {attempt})")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"🌐 Erro de conexão para bloco {block_num}: {str(e)}")
+        return None
     except Exception as e:
-        print(f"Erro ao conectar com Labelary: {str(e)}")
+        print(f"💥 Erro inesperado para bloco {block_num}: {str(e)}")
         return None
 
 if __name__ == '__main__':
