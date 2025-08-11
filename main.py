@@ -100,6 +100,12 @@ MAIN_TEMPLATE = '''
         }
         .welcome-section h2 { color: #0c5460; margin-bottom: 10px; }
         .welcome-section p { color: #0c5460; }
+        .size-info {
+            background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px;
+            padding: 15px; margin-bottom: 25px; text-align: center;
+        }
+        .size-info h3 { color: #155724; margin-bottom: 8px; }
+        .size-info p { color: #155724; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -119,12 +125,16 @@ MAIN_TEMPLATE = '''
             <h2>🚀 Bem-vindo ao ZPL Generator!</h2>
             <p>Converta seus códigos ZPL em PDFs profissionais de forma rápida e gratuita</p>
         </div>
+        <div class="size-info">
+            <h3>📏 Medidas das Etiquetas</h3>
+            <p><strong>8 cm × 2,5 cm</strong> - Otimizado para impressoras Argox</p>
+        </div>
         <div class="info-section">
             <h3>📋 Como usar:</h3>
             <p>• Cole seu código ZPL no campo abaixo</p>
             <p>• Clique em "Gerar PDF" para processar</p>
             <p>• O sistema processa automaticamente todas as etiquetas</p>
-            <p>• Tamanho otimizado: 8 x 2,5 cm (impressoras Argox)</p>
+            <p>• <strong>Medidas precisas: 8 cm × 2,5 cm</strong> (impressoras Argox)</p>
             <p>• Suporte a etiquetas múltiplas e layouts complexos</p>
             <p>• Processamento via Labelary.com para máxima qualidade</p>
             <p>• ✅ <strong>Garantia de processamento completo</strong> - Todos os blocos ZPL são processados!</p>
@@ -135,12 +145,12 @@ MAIN_TEMPLATE = '''
                     <label for="zplCode">📝 Cole seu código ZPL aqui:</label>
                     <textarea id="zplCode" name="zplCode" placeholder="^XA^FO50,50^A0N,50,50^FDSua Etiqueta^FS^XZ" required></textarea>
                 </div>
-                <button type="submit" class="generate-btn" id="generateBtn">🚀 Gerar PDF</button>
+                <button type="submit" class="generate-btn" id="generateBtn">🚀 Gerar PDF (8×2,5cm)</button>
             </form>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>Processando etiquetas via Labelary.com...</p>
-                <p><small>Aguarde, pode levar alguns segundos</small></p>
+                <p><small>Gerando etiquetas 8×2,5cm para impressoras Argox</small></p>
                 <div id="progressInfo" class="progress" style="display: none;">
                     <h4>📊 Progresso do Processamento:</h4>
                     <p id="progressText">Iniciando...</p>
@@ -148,9 +158,9 @@ MAIN_TEMPLATE = '''
             </div>
             <div id="result" class="result-card">
                 <h3 id="resultTitle">✅ PDF Gerado com Sucesso!</h3>
-                <p id="resultMessage">Seu arquivo PDF foi gerado e está pronto para download.</p>
+                <p id="resultMessage">Seu arquivo PDF foi gerado com medidas 8×2,5cm e está pronto para download.</p>
                 <div id="downloadSection" style="margin-top: 15px;">
-                    <a id="downloadLink" href="#" class="download-btn">📥 Baixar PDF</a>
+                    <a id="downloadLink" href="#" class="download-btn">📥 Baixar PDF (8×2,5cm)</a>
                 </div>
                 <div id="statsSection" class="stats" style="display: none;">
                     <h4>📊 Estatísticas do Processamento:</h4>
@@ -158,6 +168,7 @@ MAIN_TEMPLATE = '''
                     <p id="statsBlocks">Blocos ZPL detectados: -</p>
                     <p id="statsSuccess">Blocos processados com sucesso: -</p>
                     <p id="statsSize">Tamanho do arquivo: -</p>
+                    <p id="statsDimensions"><strong>Medidas: 8 cm × 2,5 cm</strong></p>
                 </div>
             </div>
         </div>
@@ -166,6 +177,7 @@ MAIN_TEMPLATE = '''
         <p>💡 Desenvolvido com <strong>Manus AI</strong></p>
         <p>🚀 Hospedado com Railway - Disponível 24/7</p>
         <p>🔧 Processamento via Labelary.com para máxima qualidade</p>
+        <p>📏 <strong>Medidas precisas: 8 cm × 2,5 cm para impressoras Argox</strong></p>
         <p>🆓 Acesso livre e gratuito para todos</p>
     </footer>
     <script>
@@ -190,7 +202,7 @@ MAIN_TEMPLATE = '''
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     document.getElementById('downloadLink').href = url;
-                    document.getElementById('downloadLink').download = 'etiquetas_zpl.pdf';
+                    document.getElementById('downloadLink').download = 'etiquetas_8x2.5cm.pdf';
                     document.getElementById('result').className = 'result-card success';
                     document.getElementById('result').style.display = 'block';
                     
@@ -221,7 +233,7 @@ MAIN_TEMPLATE = '''
             } finally {
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('generateBtn').disabled = false;
-                document.getElementById('generateBtn').innerHTML = '🚀 Gerar PDF';
+                document.getElementById('generateBtn').innerHTML = '🚀 Gerar PDF (8×2,5cm)';
             }
         });
     </script>
@@ -249,6 +261,7 @@ def generate_pdf():
         print(f"🔍 PROCESSAMENTO INICIADO:")
         print(f"📊 Total de blocos detectados: {len(zpl_blocks)}")
         print(f"📏 Tamanho total do código: {len(zpl_code)} caracteres")
+        print(f"📐 Medidas das etiquetas: 8 cm × 2,5 cm")
         
         # Estimar etiquetas (cada bloco tem 2 etiquetas baseado nas posições X)
         estimated_labels_per_block = 2  # Baseado na análise: posições X=30 e X=350
@@ -287,7 +300,7 @@ def generate_pdf():
             if pdf_data:
                 pdf_merger.append(io.BytesIO(pdf_data))
                 success_count += 1
-                print(f"✅ Bloco {block_num} processado com sucesso")
+                print(f"✅ Bloco {block_num} processado com sucesso (8×2,5cm)")
             else:
                 failed_blocks.append(block_num)
                 print(f"❌ Bloco {block_num} falhou após {max_retries} tentativas")
@@ -313,13 +326,14 @@ def generate_pdf():
         print(f"🎉 PDF GERADO COM SUCESSO!")
         print(f"📄 Páginas no PDF: {success_count}")
         print(f"🏷️ Etiquetas finais: {final_labels}")
+        print(f"📐 Medidas: 8 cm × 2,5 cm")
         print(f"📦 Tamanho do arquivo: {len(output_buffer.getvalue())} bytes")
         
         # Preparar resposta
         response = send_file(
             output_buffer,
             as_attachment=True,
-            download_name=f'etiquetas_zpl_{int(time.time())}.pdf',
+            download_name=f'etiquetas_8x2.5cm_{int(time.time())}.pdf',
             mimetype='application/pdf'
         )
         
@@ -329,7 +343,8 @@ def generate_pdf():
             'success_blocks': success_count,
             'failed_blocks': len(failed_blocks),
             'total_labels': final_labels,
-            'estimated_labels': total_estimated_labels
+            'estimated_labels': total_estimated_labels,
+            'dimensions': '8cm x 2.5cm'
         }
         response.headers['X-ZPL-Stats'] = str(stats).replace("'", '"')
         
@@ -341,8 +356,10 @@ def generate_pdf():
 
 def generate_pdf_via_labelary(zpl_code, block_num=1, attempt=1):
     try:
-        # Usar tamanho de página otimizado para etiquetas duplas
-        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/8x2.5/0/'
+        # MEDIDAS CORRETAS: 8cm x 2.5cm
+        # Labelary usa polegadas: 8cm = 3.15", 2.5cm = 0.98"
+        # URL corrigida para medidas exatas
+        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/3.15x0.98/0/'
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/pdf'
@@ -350,6 +367,7 @@ def generate_pdf_via_labelary(zpl_code, block_num=1, attempt=1):
         
         print(f"🌐 Enviando bloco {block_num} para Labelary (tentativa {attempt})")
         print(f"📏 Tamanho: {len(zpl_code)} chars")
+        print(f"📐 Medidas: 8cm × 2,5cm (3.15\" × 0.98\")")
         print(f"🔗 URL: {url}")
         
         # Timeout aumentado para blocos grandes
@@ -359,7 +377,7 @@ def generate_pdf_via_labelary(zpl_code, block_num=1, attempt=1):
         
         if response.status_code == 200:
             pdf_size = len(response.content)
-            print(f"✅ PDF gerado com sucesso para bloco {block_num}: {pdf_size} bytes")
+            print(f"✅ PDF gerado com sucesso para bloco {block_num}: {pdf_size} bytes (8×2,5cm)")
             return response.content
         else:
             print(f"❌ Erro Labelary para bloco {block_num}: {response.status_code}")
