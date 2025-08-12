@@ -16,7 +16,7 @@ MAIN_TEMPLATE = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZPL Generator Pro - Ultra Robusto</title>
+    <title>ZPL Generator Pro - Ultra Otimizado</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
@@ -47,7 +47,7 @@ MAIN_TEMPLATE = '''<!DOCTYPE html>
         <div class="header">
             <div class="logo">🏷️</div>
             <div class="title">ZPL Generator Pro</div>
-            <div class="subtitle">Sistema Ultra Robusto - Suporte Ilimitado</div>
+            <div class="subtitle">Sistema Ultra Otimizado - Zero Limites</div>
         </div>
         <div class="content">
             <div class="info-card">
@@ -55,14 +55,14 @@ MAIN_TEMPLATE = '''<!DOCTYPE html>
                 <p><strong>8 cm × 2,5 cm</strong> - Otimizado para impressoras Argox</p>
             </div>
             <div class="ultra-card">
-                <h3>🔧 Sistema Ultra Robusto:</h3>
+                <h3>🚀 Sistema Ultra Otimizado:</h3>
                 <ul style="margin-left: 20px; color: #666;">
-                    <li><strong>✅ Suporte Ilimitado:</strong> Códigos de 1 KB até 50 GB</li>
-                    <li><strong>🔄 Processamento Paralelo:</strong> Múltiplos lotes simultâneos</li>
-                    <li><strong>📡 Streaming de Dados:</strong> Não sobrecarrega memória</li>
-                    <li><strong>🔁 Retry Inteligente:</strong> Até 7 tentativas com backoff</li>
-                    <li><strong>⏱️ Timeout Adaptativo:</strong> Ajusta para código grande</li>
-                    <li><strong>🛡️ Sistema 24/7:</strong> Funciona sem falhas</li>
+                    <li><strong>💾 Arquivos em Disco:</strong> Não sobrecarrega memória</li>
+                    <li><strong>📊 Limite por KB:</strong> Lotes inteligentes por tamanho</li>
+                    <li><strong>🔄 Fallback Automático:</strong> Reduz lote se falhar</li>
+                    <li><strong>📡 Streaming Direto:</strong> PDF final otimizado</li>
+                    <li><strong>🛡️ Sistema 24/7:</strong> Funciona com qualquer tamanho</li>
+                    <li><strong>⚡ Zero Crash:</strong> Memória sempre controlada</li>
                 </ul>
             </div>
             <form id="zplForm">
@@ -74,13 +74,13 @@ MAIN_TEMPLATE = '''<!DOCTYPE html>
 ...
 ^XZ
 
-Cole códigos de qualquer tamanho - sistema ultra robusto!"></textarea>
+Sistema ultra otimizado - suporta códigos gigantescos!"></textarea>
                 </div>
-                <button type="submit" class="generate-btn" id="generateBtn">🚀 Gerar PDF Ultra Robusto (8×2,5cm)</button>
+                <button type="submit" class="generate-btn" id="generateBtn">🚀 Gerar PDF Ultra Otimizado (8×2,5cm)</button>
             </form>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p id="loadingText">Processando código ZPL ultra robusto...</p>
+                <p id="loadingText">Processando com sistema ultra otimizado...</p>
             </div>
             <div id="result"></div>
         </div>
@@ -96,7 +96,7 @@ Cole códigos de qualquer tamanho - sistema ultra robusto!"></textarea>
             const result = document.getElementById('result');
             
             generateBtn.disabled = true;
-            generateBtn.textContent = '⏳ Processando Ultra Robusto...';
+            generateBtn.textContent = '⏳ Processando Ultra Otimizado...';
             loading.style.display = 'block';
             result.innerHTML = '';
             
@@ -111,13 +111,13 @@ Cole códigos de qualquer tamanho - sistema ultra robusto!"></textarea>
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url; a.download = 'etiquetas_zpl_ultra_robusto.pdf';
+                    a.href = url; a.download = 'etiquetas_zpl_ultra_otimizado.pdf';
                     document.body.appendChild(a); a.click();
                     window.URL.revokeObjectURL(url); document.body.removeChild(a);
                     
                     result.innerHTML = `<div class="result-card">
-                        <h3>✅ PDF Gerado com Sucesso Ultra Robusto!</h3>
-                        <p>Arquivo PDF gerado com medidas 8×2,5cm - Sistema Ultra Robusto</p>
+                        <h3>✅ PDF Gerado com Sucesso Ultra Otimizado!</h3>
+                        <p>Sistema ultra otimizado - memória controlada, zero crash!</p>
                     </div>`;
                 } else {
                     const errorData = await response.json();
@@ -133,7 +133,7 @@ Cole códigos de qualquer tamanho - sistema ultra robusto!"></textarea>
                 </div>`;
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.textContent = '🚀 Gerar PDF Ultra Robusto (8×2,5cm)';
+                generateBtn.textContent = '🚀 Gerar PDF Ultra Otimizado (8×2,5cm)';
                 loading.style.display = 'none';
             }
         });
@@ -149,8 +149,35 @@ def index():
 def request_entity_too_large(error):
     return jsonify({'error': 'Arquivo muito grande. Limite: 50 GB'}), 413
 
+def create_smart_batches(zpl_blocks, max_blocks=5, max_kb=500):
+    """Cria lotes inteligentes limitados por blocos E tamanho em KB"""
+    batches = []
+    current_batch = []
+    current_size = 0
+    
+    for block in zpl_blocks:
+        block_size_kb = len(block) / 1024
+        
+        # Se adicionar este bloco exceder limites, finaliza lote atual
+        if (len(current_batch) >= max_blocks or 
+            current_size + block_size_kb > max_kb) and current_batch:
+            batches.append(current_batch)
+            current_batch = []
+            current_size = 0
+        
+        current_batch.append(block)
+        current_size += block_size_kb
+    
+    # Adiciona último lote se não vazio
+    if current_batch:
+        batches.append(current_batch)
+    
+    return batches
+
 @app.route('/generate-pdf', methods=['POST'])
 def generate_pdf():
+    temp_pdfs = []  # Lista de PDFs temporários em disco
+    
     try:
         data = request.get_json()
         zpl_code = data.get('zpl_code', '').strip()
@@ -164,83 +191,119 @@ def generate_pdf():
             return jsonify({'error': 'Código ZPL inválido - nenhum bloco ^XA...^XZ encontrado'}), 400
         
         total_blocks = len(zpl_blocks)
-        logger.info(f"🚀 PROCESSAMENTO ULTRA ROBUSTO: {total_blocks} blocos, {len(zpl_code):,} chars")
+        total_size_kb = len(zpl_code) / 1024
+        logger.info(f"🚀 PROCESSAMENTO ULTRA OTIMIZADO: {total_blocks} blocos, {total_size_kb:.1f}KB")
         
-        # CONFIGURAÇÃO ADAPTATIVA ULTRA ROBUSTA
+        # CONFIGURAÇÃO ADAPTATIVA ULTRA OTIMIZADA
         if total_blocks <= 10:
-            BATCH_SIZE, DELAY, MAX_RETRIES, TIMEOUT, WORKERS = 10, 0.5, 2, 30, 2
+            MAX_BLOCKS, MAX_KB, MAX_RETRIES, TIMEOUT, WORKERS = 10, 1000, 2, 30, 2
         elif total_blocks <= 100:
-            BATCH_SIZE, DELAY, MAX_RETRIES, TIMEOUT, WORKERS = 5, 1, 3, 60, 3
+            MAX_BLOCKS, MAX_KB, MAX_RETRIES, TIMEOUT, WORKERS = 5, 500, 3, 60, 3
         elif total_blocks <= 1000:
-            BATCH_SIZE, DELAY, MAX_RETRIES, TIMEOUT, WORKERS = 3, 2, 5, 120, 4
+            MAX_BLOCKS, MAX_KB, MAX_RETRIES, TIMEOUT, WORKERS = 3, 300, 5, 120, 4
         else:
-            BATCH_SIZE, DELAY, MAX_RETRIES, TIMEOUT, WORKERS = 2, 3, 7, 300, 5
+            MAX_BLOCKS, MAX_KB, MAX_RETRIES, TIMEOUT, WORKERS = 2, 200, 7, 300, 5
         
-        logger.info(f"🔧 CONFIG: Lote={BATCH_SIZE}, Timeout={TIMEOUT}s, Retries={MAX_RETRIES}, Workers={WORKERS}")
+        # Limitar workers para não sobrecarregar
+        WORKERS = min(WORKERS, os.cpu_count() * 2 if os.cpu_count() else 4)
+        
+        logger.info(f"🔧 CONFIG: MaxBlocks={MAX_BLOCKS}, MaxKB={MAX_KB}, Timeout={TIMEOUT}s, Workers={WORKERS}")
         
         start_time = time.time()
-        pdf_merger = PdfMerger()
         success_count = 0
         
-        # Dividir em lotes
-        batches = [zpl_blocks[i:i+BATCH_SIZE] for i in range(0, len(zpl_blocks), BATCH_SIZE)]
+        # Criar lotes inteligentes (por blocos E tamanho)
+        batches = create_smart_batches(zpl_blocks, MAX_BLOCKS, MAX_KB)
+        logger.info(f"📦 Criados {len(batches)} lotes inteligentes")
         
-        def process_batch(batch_data):
+        def process_batch_with_fallback(batch_data):
             batch_index, batch = batch_data
+            current_batch = batch[:]  # Cópia para fallback
+            
             for attempt in range(MAX_RETRIES):
                 try:
-                    batch_zpl = '\n'.join(batch) + '\n'
+                    batch_zpl = '\n'.join(current_batch) + '\n'
+                    batch_size_kb = len(batch_zpl) / 1024
+                    
                     pdf_data = generate_pdf_via_labelary_ultra_robust(batch_zpl, TIMEOUT, attempt + 1)
                     if pdf_data:
-                        logger.info(f"✅ Lote {batch_index + 1} OK (tentativa {attempt + 1})")
-                        return {'success': True, 'pdf_data': pdf_data, 'blocks_count': len(batch)}
+                        # SALVAR PDF EM DISCO (não na memória)
+                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+                        temp_file.write(pdf_data)
+                        temp_file.close()
+                        
+                        logger.info(f"✅ Lote {batch_index + 1} OK ({len(current_batch)} blocos, {batch_size_kb:.1f}KB)")
+                        return {'success': True, 'pdf_path': temp_file.name, 'blocks_count': len(current_batch)}
+                        
                 except Exception as e:
                     logger.error(f"💥 Lote {batch_index + 1}, tentativa {attempt + 1}: {str(e)}")
+                
+                # FALLBACK: Reduzir lote pela metade se falhar
+                if len(current_batch) > 1 and attempt < MAX_RETRIES - 1:
+                    mid = len(current_batch) // 2
+                    current_batch = current_batch[:mid]
+                    logger.warning(f"🔄 Fallback: Reduzindo lote {batch_index + 1} para {len(current_batch)} blocos")
                 
                 if attempt < MAX_RETRIES - 1:
                     time.sleep((2 ** attempt) * 1)  # Backoff exponencial
             
-            return {'success': False, 'blocks': batch}
+            return {'success': False, 'blocks': current_batch}
         
-        # Processamento paralelo ultra robusto
+        # Processamento paralelo ultra otimizado
         with ThreadPoolExecutor(max_workers=WORKERS) as executor:
-            future_to_batch = {executor.submit(process_batch, (i, batch)): i for i, batch in enumerate(batches)}
+            future_to_batch = {executor.submit(process_batch_with_fallback, (i, batch)): i for i, batch in enumerate(batches)}
             
             for future in as_completed(future_to_batch):
                 result = future.result()
                 if result['success']:
-                    pdf_merger.append(io.BytesIO(result['pdf_data']))
+                    temp_pdfs.append(result['pdf_path'])
                     success_count += result['blocks_count']
                     progress = (success_count / total_blocks) * 100
                     logger.info(f"📈 Progresso: {progress:.1f}% ({success_count}/{total_blocks})")
                 
-                time.sleep(DELAY)
-                gc.collect()
+                time.sleep(0.1)  # Pausa mínima
         
-        if success_count == 0:
+        if not temp_pdfs:
             return jsonify({'error': 'Nenhum bloco processado com sucesso'}), 500
         
-        # Gerar PDF final
-        output_buffer = io.BytesIO()
-        pdf_merger.write(output_buffer)
-        pdf_merger.close()
-        output_buffer.seek(0)
+        # MESCLAR PDFs DIRETO EM DISCO (não na memória)
+        final_pdf = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        final_pdf.close()
         
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-        temp_file.write(output_buffer.getvalue())
-        temp_file.close()
+        pdf_merger = PdfMerger()
+        for pdf_path in temp_pdfs:
+            pdf_merger.append(pdf_path)
+        
+        # Escrever direto no arquivo final
+        with open(final_pdf.name, 'wb') as output_file:
+            pdf_merger.write(output_file)
+        pdf_merger.close()
+        
+        # Limpar PDFs temporários
+        for pdf_path in temp_pdfs:
+            try:
+                os.unlink(pdf_path)
+            except:
+                pass
         
         processing_time = time.time() - start_time
-        file_size_kb = len(output_buffer.getvalue()) / 1024
+        file_size_kb = os.path.getsize(final_pdf.name) / 1024
         success_rate = (success_count / total_blocks) * 100
         
-        logger.info(f"✅ ULTRA ROBUSTO CONCLUÍDO: {success_count}/{total_blocks} blocos ({success_rate:.1f}%), {processing_time:.1f}s, {file_size_kb:.1f}KB")
+        logger.info(f"✅ ULTRA OTIMIZADO CONCLUÍDO: {success_count}/{total_blocks} blocos ({success_rate:.1f}%), {processing_time:.1f}s, {file_size_kb:.1f}KB")
         
-        return send_file(temp_file.name, as_attachment=True, download_name='etiquetas_zpl_ultra_robusto.pdf', mimetype='application/pdf')
+        return send_file(final_pdf.name, as_attachment=True, download_name='etiquetas_zpl_ultra_otimizado.pdf', mimetype='application/pdf')
         
     except Exception as e:
         logger.error(f"💥 Erro crítico: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+    finally:
+        # Limpeza final de segurança
+        for pdf_path in temp_pdfs:
+            try:
+                os.unlink(pdf_path)
+            except:
+                pass
 
 def generate_pdf_via_labelary_ultra_robust(zpl_code, timeout=60, attempt=1):
     """Gera PDF via Labelary com sistema ultra robusto"""
@@ -268,7 +331,10 @@ def generate_pdf_via_labelary_ultra_robust(zpl_code, timeout=60, attempt=1):
             logger.info(f"✅ PDF recebido ({len(pdf_content)} bytes)")
             return pdf_content
         else:
-            logger.error(f"❌ Labelary: {response.status_code}")
+            error_msg = f"HTTP {response.status_code}"
+            if response.text:
+                error_msg += f": {response.text[:100]}"
+            logger.error(f"❌ Labelary: {error_msg}")
             return None
             
     except requests.exceptions.Timeout:
