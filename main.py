@@ -176,7 +176,7 @@ def generate_pdf():
         else:
             BATCH_SIZE, DELAY, MAX_RETRIES, TIMEOUT, WORKERS = 2, 3, 7, 300, 5
         
-        logger.info(f"🔧 CONFIG: Lote={BATCH_SIZE}, Timeout={TIMEOUT}s, Retries={RETRY}, Workers={WORKERS}")
+        logger.info(f"🔧 CONFIG: Lote={BATCH_SIZE}, Timeout={TIMEOUT}s, Retries={MAX_RETRIES}, Workers={WORKERS}")
         
         start_time = time.time()
         pdf_merger = PdfMerger()
