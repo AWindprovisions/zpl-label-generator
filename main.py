@@ -16,109 +16,113 @@ def index():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZPL Generator - Final Robusto</title>
+    <title>ZPL Generator - Por Partes</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
         .header { text-align: center; margin-bottom: 30px; }
         .logo { font-size: 48px; }
-        .success-card { background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745; }
+        .strategy-card { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107; }
         .info { background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .controls { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         textarea { width: 100%; height: 200px; padding: 10px; font-family: monospace; }
-        button { width: 100%; padding: 15px; font-size: 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #218838; }
+        button { width: 100%; padding: 15px; font-size: 16px; background: #ffc107; color: #212529; border: none; border-radius: 5px; cursor: pointer; margin: 5px 0; }
+        button:hover { background: #e0a800; }
         button:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
         .result { margin-top: 20px; padding: 15px; border-radius: 5px; }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
         .loading { display: none; text-align: center; margin-top: 20px; }
-        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #28a745; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #ffc107; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .progress { background: #f8f9fa; border-radius: 5px; margin: 10px 0; height: 20px; }
-        .progress-bar { background: #28a745; height: 100%; border-radius: 5px; transition: width 0.3s; width: 0%; }
+        .progress-bar { background: #ffc107; height: 100%; border-radius: 5px; transition: width 0.3s; width: 0%; }
         .stats { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 10px; font-family: monospace; font-size: 12px; }
+        .range-input { width: 100%; margin: 10px 0; }
+        label { display: block; margin: 5px 0; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">🏷️</div>
         <h1>ZPL Generator</h1>
-        <p>Final Robusto - Sistema Comprovado</p>
+        <p>Processamento por Partes - Evita Timeout</p>
     </div>
     
-    <div class="success-card">
-        <h3>✅ Sistema Comprovado Funcionando:</h3>
+    <div class="strategy-card">
+        <h3>💡 Estratégia Anti-Timeout:</h3>
         <ul>
-            <li>🧪 <strong>Debug aprovado:</strong> PDF gerado com sucesso</li>
-            <li>📡 <strong>API Labelary OK:</strong> Conectividade confirmada</li>
-            <li>📏 <strong>Medidas corretas:</strong> 8×2,5cm funcionando</li>
-            <li>🔧 <strong>Código robusto:</strong> Sem erros de sistema</li>
+            <li>📦 <strong>Processa 50 blocos por vez</strong> (evita timeout)</li>
+            <li>⏱️ <strong>Tempo máximo:</strong> ~2 minutos por parte</li>
+            <li>🔢 <strong>Para 299 blocos:</strong> 6 execuções de 50 blocos</li>
+            <li>📁 <strong>PDFs separados:</strong> Depois você junta manualmente</li>
         </ul>
     </div>
     
-    <div class="info">
-        <h3>🚀 Versão Final Otimizada:</h3>
-        <ul>
-            <li>📦 <strong>Lotes de 3 blocos:</strong> Máxima estabilidade</li>
-            <li>⏱️ <strong>Pausa de 1 segundo:</strong> Entre lotes</li>
-            <li>🔄 <strong>3 tentativas por lote:</strong> Sistema robusto</li>
-            <li>📏 <strong>Espaços entre SKUs:</strong> Separação automática</li>
-            <li>📊 <strong>Progresso em tempo real:</strong> Acompanhe o processamento</li>
-        </ul>
+    <div class="controls">
+        <h3>🎛️ Controles de Processamento:</h3>
+        <label for="startBlock">Bloco inicial (1-299):</label>
+        <input type="number" id="startBlock" value="1" min="1" max="299" class="range-input">
+        
+        <label for="endBlock">Bloco final (1-299):</label>
+        <input type="number" id="endBlock" value="50" min="1" max="299" class="range-input">
+        
+        <div style="margin: 10px 0;">
+            <button onclick="setRange(1, 50)" class="btn-success">📦 Parte 1 (1-50)</button>
+            <button onclick="setRange(51, 100)" class="btn-success">📦 Parte 2 (51-100)</button>
+            <button onclick="setRange(101, 150)" class="btn-success">📦 Parte 3 (101-150)</button>
+            <button onclick="setRange(151, 200)" class="btn-success">📦 Parte 4 (151-200)</button>
+            <button onclick="setRange(201, 250)" class="btn-success">📦 Parte 5 (201-250)</button>
+            <button onclick="setRange(251, 299)" class="btn-success">📦 Parte 6 (251-299)</button>
+        </div>
     </div>
     
     <form id="zplForm">
-        <label for="zplCode">Cole seu código ZPL (todos os 299 blocos serão processados):</label><br><br>
+        <label for="zplCode">Cole seu código ZPL completo (será processado por partes):</label><br><br>
         <textarea id="zplCode" placeholder="^XA^CI28
 ^LH0,0
 ^FO30,15^BY2,,0^BCN,54,N,N^FDTEST123^FS
 ^FO105,75^A0N,20,25^FH^FDTEST123^FS
 ^XZ
 
-Sistema final robusto - comprovado funcionando!"></textarea><br><br>
-        <button type="submit">🚀 Gerar PDF Completo (Sistema Robusto)</button>
+Cole todo o código - será processado por partes!"></textarea><br><br>
+        <button type="submit">🚀 Processar Parte Selecionada</button>
     </form>
     
     <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p id="loadingText">Processando todos os blocos...</p>
+        <p id="loadingText">Processando parte...</p>
         <div class="progress">
             <div class="progress-bar" id="progressBar"></div>
         </div>
         <p id="progressText">0% - Iniciando...</p>
         <div class="stats" id="stats">
-            Blocos processados: 0/0<br>
-            Tempo decorrido: 0s<br>
-            Estimativa restante: Calculando...
+            Blocos da parte: 0/0<br>
+            Tempo decorrido: 0s
         </div>
     </div>
     
     <div id="result"></div>
     
     <script>
-        let startTime;
-        let totalBlocks = 0;
-        let processedBlocks = 0;
+        function setRange(start, end) {
+            document.getElementById('startBlock').value = start;
+            document.getElementById('endBlock').value = end;
+        }
         
         function updateProgress(processed, total, elapsed) {
-            processedBlocks = processed;
-            totalBlocks = total;
-            
             const percentage = total > 0 ? (processed / total) * 100 : 0;
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const stats = document.getElementById('stats');
             
             progressBar.style.width = percentage + '%';
-            progressText.textContent = `${percentage.toFixed(1)}% - Processando lote ${Math.ceil(processed/3)}...`;
-            
-            const avgTimePerBlock = elapsed / Math.max(processed, 1);
-            const remainingBlocks = total - processed;
-            const estimatedRemaining = avgTimePerBlock * remainingBlocks;
+            progressText.textContent = `${percentage.toFixed(1)}% - Processando...`;
             
             stats.innerHTML = `
-                Blocos processados: ${processed}/${total}<br>
-                Tempo decorrido: ${elapsed.toFixed(1)}s<br>
-                Estimativa restante: ${estimatedRemaining.toFixed(1)}s
+                Blocos da parte: ${processed}/${total}<br>
+                Tempo decorrido: ${elapsed.toFixed(1)}s
             `;
         }
         
@@ -131,12 +135,11 @@ Sistema final robusto - comprovado funcionando!"></textarea><br><br>
                 return;
             }
             
-            // Contar blocos ZPL
-            const blocks = zplCode.match(/\^XA[\s\S]*?\^XZ/gi) || [];
-            totalBlocks = blocks.length;
+            const startBlock = parseInt(document.getElementById('startBlock').value);
+            const endBlock = parseInt(document.getElementById('endBlock').value);
             
-            if (totalBlocks === 0) {
-                alert('Nenhum bloco ZPL válido encontrado!');
+            if (startBlock > endBlock) {
+                alert('Bloco inicial deve ser menor que o final!');
                 return;
             }
             
@@ -145,56 +148,50 @@ Sistema final robusto - comprovado funcionando!"></textarea><br><br>
             const loading = document.getElementById('loading');
             
             button.disabled = true;
-            button.textContent = `⏳ Processando ${totalBlocks} blocos...`;
+            button.textContent = `⏳ Processando blocos ${startBlock}-${endBlock}...`;
             loading.style.display = 'block';
             result.innerHTML = '';
             
-            startTime = Date.now();
-            processedBlocks = 0;
-            updateProgress(0, totalBlocks, 0);
-            
-            // Simular progresso durante processamento
-            const progressInterval = setInterval(() => {
-                const elapsed = (Date.now() - startTime) / 1000;
-                updateProgress(processedBlocks, totalBlocks, elapsed);
-            }, 1000);
+            const startTime = Date.now();
             
             try {
-                const response = await fetch('/generate', {
+                const response = await fetch('/generate-part', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: zplCode })
+                    body: JSON.stringify({ 
+                        zpl: zplCode,
+                        start_block: startBlock,
+                        end_block: endBlock
+                    })
                 });
-                
-                clearInterval(progressInterval);
                 
                 if (response.ok) {
                     const blob = await response.blob();
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'etiquetas_completas_final.pdf';
+                    a.download = `etiquetas_parte_${startBlock}-${endBlock}.pdf`;
                     a.click();
                     URL.revokeObjectURL(url);
                     
                     const elapsed = (Date.now() - startTime) / 1000;
-                    updateProgress(totalBlocks, totalBlocks, elapsed);
+                    const blocksProcessed = endBlock - startBlock + 1;
                     
                     result.innerHTML = `<div class="result success">
-                        <h3>✅ PDF Completo Gerado com Sucesso!</h3>
-                        <p><strong>${totalBlocks} blocos processados</strong> em ${elapsed.toFixed(1)} segundos</p>
-                        <p>Sistema final robusto funcionando perfeitamente!</p>
+                        <h3>✅ Parte ${startBlock}-${endBlock} Processada!</h3>
+                        <p><strong>${blocksProcessed} blocos</strong> processados em ${elapsed.toFixed(1)} segundos</p>
+                        <p>📁 PDF baixado: etiquetas_parte_${startBlock}-${endBlock}.pdf</p>
+                        <p>🔄 <strong>Próximo:</strong> Ajuste os controles para a próxima parte</p>
                     </div>`;
                 } else {
                     const error = await response.json();
                     result.innerHTML = `<div class="result error">❌ ${error.error}</div>`;
                 }
             } catch (error) {
-                clearInterval(progressInterval);
                 result.innerHTML = `<div class="result error">❌ Erro: ${error.message}</div>`;
             } finally {
                 button.disabled = false;
-                button.textContent = '🚀 Gerar PDF Completo (Sistema Robusto)';
+                button.textContent = '🚀 Processar Parte Selecionada';
                 loading.style.display = 'none';
             }
         });
@@ -202,36 +199,15 @@ Sistema final robusto - comprovado funcionando!"></textarea><br><br>
 </body>
 </html>'''
 
-def extract_sku_from_block(zpl_block):
-    """Extrai SKU do bloco ZPL para detectar mudanças"""
-    patterns = [
-        r'SKU[:\s]*([A-Za-z0-9\-_.]+)',
-        r'\^FD([A-Za-z0-9\-_.]{6,})\^FS',
-        r'\^A0.*?\^FD([A-Za-z0-9\-_.]+)\^FS'
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, zpl_block, re.IGNORECASE)
-        if match:
-            return match.group(1).strip()
-    
-    return None
-
-def create_blank_separator():
-    """Cria etiqueta separadora entre SKUs"""
-    return """^XA
-^LH0,0
-^FO0,0^GB800,250,2^FS
-^FO400,125^A0N,20,20^FH^FD--- SEPARADOR SKU ---^FS
-^XZ"""
-
-@app.route('/generate', methods=['POST'])
-def generate():
+@app.route('/generate-part', methods=['POST'])
+def generate_part():
     try:
-        print("🚀 === PROCESSAMENTO FINAL ROBUSTO ===")
+        print("🚀 === PROCESSAMENTO POR PARTES ===")
         
         data = request.get_json()
         zpl_code = data.get('zpl', '').strip()
+        start_block = data.get('start_block', 1)
+        end_block = data.get('end_block', 50)
         
         if not zpl_code:
             return jsonify({'error': 'Código ZPL não fornecido'}), 400
@@ -240,45 +216,35 @@ def generate():
         zpl_blocks = re.findall(r'\^XA[\s\S]*?\^XZ', zpl_code, re.IGNORECASE)
         
         if not zpl_blocks:
-            if not zpl_code.startswith('^XA'):
-                zpl_code = '^XA\n' + zpl_code
-            if not zpl_code.endswith('^XZ'):
-                zpl_code = zpl_code + '\n^XZ'
-            zpl_blocks = [zpl_code]
+            return jsonify({'error': 'Nenhum bloco ZPL válido encontrado'}), 400
         
-        print(f"📊 TOTAL DE BLOCOS: {len(zpl_blocks)}")
+        total_blocks = len(zpl_blocks)
+        print(f"📊 TOTAL DE BLOCOS: {total_blocks}")
+        print(f"📦 PROCESSANDO PARTE: {start_block}-{end_block}")
         
-        # Adicionar separadores entre SKUs diferentes
-        blocks_with_separators = []
-        last_sku = None
+        # Validar range
+        if start_block < 1 or end_block > total_blocks or start_block > end_block:
+            return jsonify({'error': f'Range inválido. Blocos disponíveis: 1-{total_blocks}'}), 400
         
-        for i, block in enumerate(zpl_blocks):
-            current_sku = extract_sku_from_block(block)
-            
-            # Se mudou de SKU, adicionar separador
-            if last_sku is not None and current_sku != last_sku and current_sku is not None:
-                print(f"🔄 SKU mudou: {last_sku} → {current_sku}")
-                blocks_with_separators.append(create_blank_separator())
-            
-            blocks_with_separators.append(block)
-            last_sku = current_sku
+        # Extrair blocos da parte selecionada (índices baseados em 0)
+        selected_blocks = zpl_blocks[start_block-1:end_block]
+        print(f"📋 BLOCOS SELECIONADOS: {len(selected_blocks)}")
         
-        print(f"📦 BLOCOS COM SEPARADORES: {len(blocks_with_separators)}")
-        
-        # Processar em lotes de 3 blocos para máxima estabilidade
-        return process_all_blocks_robust(blocks_with_separators)
+        # Processar blocos selecionados
+        return process_selected_blocks(selected_blocks, start_block, end_block)
         
     except Exception as e:
         print(f"💥 Erro: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-def process_all_blocks_robust(zpl_blocks):
-    """Processa todos os blocos com máxima robustez"""
+def process_selected_blocks(zpl_blocks, start_num, end_num):
+    """Processa apenas os blocos selecionados"""
     try:
         pdf_merger = PdfMerger()
         temp_files = []
         
-        batch_size = 3  # Lotes pequenos para estabilidade
+        # Lotes de 5 blocos para estabilidade
+        batch_size = 5
         total_batches = (len(zpl_blocks) + batch_size - 1) // batch_size
         
         print(f"🔄 Processando {len(zpl_blocks)} blocos em {total_batches} lotes de {batch_size}")
@@ -289,7 +255,7 @@ def process_all_blocks_robust(zpl_blocks):
             
             print(f"📦 Lote {batch_num}/{total_batches} ({len(batch)} blocos)")
             
-            # Tentar processar lote com retry
+            # Tentar processar lote
             success = False
             for attempt in range(3):
                 try:
@@ -319,19 +285,19 @@ def process_all_blocks_robust(zpl_blocks):
                 except Exception as e:
                     print(f"❌ Tentativa {attempt + 1}: {str(e)}")
                 
-                if attempt < 2:  # Pausa entre tentativas
-                    time.sleep(2)
+                if attempt < 2:
+                    time.sleep(1)
             
             if not success:
                 print(f"💥 Lote {batch_num} falhou após 3 tentativas")
             
-            # Pausa entre lotes para não sobrecarregar API
-            time.sleep(1)
+            # Pausa pequena entre lotes
+            time.sleep(0.5)
         
         if not temp_files:
             return jsonify({'error': 'Nenhum lote processado com sucesso'}), 500
         
-        # Criar PDF final
+        # Criar PDF final da parte
         output_buffer = io.BytesIO()
         pdf_merger.write(output_buffer)
         pdf_merger.close()
@@ -350,9 +316,9 @@ def process_all_blocks_robust(zpl_blocks):
                 pass
         
         file_size_kb = len(output_buffer.getvalue()) / 1024
-        print(f"✅ PDF FINAL: {len(zpl_blocks)} blocos, {file_size_kb:.1f}KB")
+        print(f"✅ PDF PARTE {start_num}-{end_num}: {len(zpl_blocks)} blocos, {file_size_kb:.1f}KB")
         
-        return send_file(final_temp.name, as_attachment=True, download_name='etiquetas_completas_final.pdf')
+        return send_file(final_temp.name, as_attachment=True, download_name=f'etiquetas_parte_{start_num}-{end_num}.pdf')
         
     except Exception as e:
         print(f"💥 Erro no processamento: {str(e)}")
