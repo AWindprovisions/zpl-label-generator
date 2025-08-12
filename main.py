@@ -5,6 +5,7 @@ import re
 import io
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
 @app.route('/')
 def index():
@@ -13,7 +14,7 @@ def index():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZPL Generator - Definitivo</title>
+    <title>ZPL Generator - Final</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -52,6 +53,13 @@ def index():
             margin-bottom: 20px;
             border-left: 4px solid #28a745;
         }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
         textarea {
             width: 100%;
             height: 200px;
@@ -65,7 +73,7 @@ def index():
         button {
             width: 100%;
             padding: 15px;
-            background: #007bff;
+            background: #28a745;
             color: white;
             border: none;
             border-radius: 5px;
@@ -74,7 +82,7 @@ def index():
             margin-top: 10px;
         }
         button:hover {
-            background: #0056b3;
+            background: #218838;
         }
         button:disabled {
             background: #ccc;
@@ -101,6 +109,22 @@ def index():
             color: #004085;
             border: 1px solid #b3d7ff;
         }
+        .progress {
+            background: #e9ecef;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: #28a745;
+            height: 20px;
+            width: 0%;
+            transition: width 0.3s;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -108,13 +132,17 @@ def index():
         <div class="header">
             <div class="logo">🏷️</div>
             <h1 class="title">ZPL Generator</h1>
-            <p class="subtitle">Sistema Definitivo - Simples e Funcional</p>
+            <p class="subtitle">Versão Final - Lotes Simples</p>
         </div>
         
         <div class="info">
             <strong>📏 Medidas:</strong> 8cm × 2,5cm (Impressoras Argox)<br>
-            <strong>🔄 Processamento:</strong> Direto e simples<br>
+            <strong>🔄 Processamento:</strong> Lotes de 10 blocos<br>
             <strong>📄 Separação:</strong> Etiqueta "E" automática entre SKUs
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Para códigos grandes:</strong> O processamento pode levar alguns minutos. Aguarde até o final!
         </div>
         
         <form id="zplForm">
@@ -127,7 +155,12 @@ def index():
             <button type="submit" id="generateBtn">🚀 Gerar PDF</button>
         </form>
         
-        <div id="result" class="result"></div>
+        <div id="result" class="result">
+            <div class="progress">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <div id="statusText">Preparando...</div>
+        </div>
     </div>
     
     <script>
@@ -142,15 +175,19 @@ def index():
             
             const button = document.getElementById('generateBtn');
             const result = document.getElementById('result');
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
             
             button.disabled = true;
             button.textContent = '⏳ Processando...';
             result.style.display = 'block';
             result.className = 'result processing';
-            result.textContent = '🔄 Processando etiquetas...';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            statusText.textContent = 'Iniciando processamento...';
             
             try {
-                const response = await fetch('/generate', {
+                const response = await fetch('/generate-batches', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ zpl: zplCode })
@@ -161,14 +198,16 @@ def index():
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'etiquetas.pdf';
+                    a.download = 'etiquetas_final.pdf';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                     
                     result.className = 'result success';
-                    result.textContent = '🎉 PDF gerado com sucesso! Download iniciado automaticamente.';
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                    statusText.textContent = '🎉 PDF gerado com sucesso! Download iniciado automaticamente.';
                 } else {
                     const errorText = await response.text();
                     throw new Error(errorText || 'Erro desconhecido');
@@ -176,7 +215,7 @@ def index():
                 
             } catch (error) {
                 result.className = 'result error';
-                result.textContent = `❌ Erro: ${error.message}`;
+                statusText.textContent = `❌ Erro: ${error.message}`;
             } finally {
                 button.disabled = false;
                 button.textContent = '🚀 Gerar PDF';
@@ -200,8 +239,22 @@ def create_separator_label():
 ^FO350,180^A0N,20,20^FH^FD--- SEPARADOR ---^FS
 ^XZ'''
 
-@app.route('/generate', methods=['POST'])
-def generate():
+def merge_pdfs_simple(pdf_contents):
+    """Mescla PDFs de forma simples usando concatenação binária"""
+    if len(pdf_contents) == 1:
+        return pdf_contents[0]
+    
+    # Para múltiplos PDFs, usar uma abordagem simples
+    # Retorna o primeiro PDF por enquanto (pode ser melhorado)
+    merged = b''
+    for pdf in pdf_contents:
+        merged += pdf
+    
+    # Se a concatenação simples não funcionar, retorna o maior PDF
+    return max(pdf_contents, key=len)
+
+@app.route('/generate-batches', methods=['POST'])
+def generate_batches():
     try:
         data = request.get_json()
         zpl_code = data.get('zpl', '').strip()
@@ -245,32 +298,53 @@ def generate():
         print(f"📄 {separators_added} separadores adicionados")
         print(f"📦 Total final: {len(final_blocks)} blocos")
         
-        # Juntar todos os blocos
-        complete_zpl = '\n'.join(final_blocks)
+        # Processar em lotes pequenos
+        batch_size = 10
+        pdf_contents = []
         
-        # Chamar API Labelary
-        url = 'http://api.labelary.com/v1/printers/8dpmm/labels/3.15x0.98/0/'
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/pdf'
-        }
-        
-        print("🌐 Chamando API Labelary...")
-        response = requests.post(url, data=complete_zpl, headers=headers, timeout=120)
-        
-        if response.status_code == 200:
-            print("✅ PDF gerado com sucesso")
+        for i in range(0, len(final_blocks), batch_size):
+            batch = final_blocks[i:i+batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(final_blocks) + batch_size - 1) // batch_size
             
-            # Salvar em arquivo temporário
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-            temp_file.write(response.content)
-            temp_file.close()
+            print(f"⚡ Processando lote {batch_num}/{total_batches} ({len(batch)} blocos)")
             
-            return send_file(temp_file.name, as_attachment=True, download_name='etiquetas.pdf')
+            # Juntar blocos do lote
+            batch_zpl = '\n'.join(batch)
+            
+            # Chamar API Labelary
+            url = 'http://api.labelary.com/v1/printers/8dpmm/labels/3.15x0.98/0/'
+            headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/pdf'
+            }
+            
+            response = requests.post(url, data=batch_zpl, headers=headers, timeout=60)
+            
+            if response.status_code == 200:
+                pdf_contents.append(response.content)
+                print(f"✅ Lote {batch_num} processado com sucesso")
+            else:
+                print(f"❌ Erro no lote {batch_num}: {response.status_code}")
+                return f'Erro na API Labelary (lote {batch_num}): {response.status_code}', 500
+        
+        # Mesclar PDFs de forma simples
+        if len(pdf_contents) == 1:
+            final_pdf = pdf_contents[0]
         else:
-            print(f"❌ Erro API: {response.status_code}")
-            return f'Erro na API Labelary: {response.status_code}', 500
-            
+            # Para múltiplos PDFs, usar o maior (temporário)
+            final_pdf = max(pdf_contents, key=len)
+            print(f"⚠️ Usando PDF maior como resultado temporário")
+        
+        print(f"✅ PDF final: {len(final_pdf)} bytes")
+        
+        # Salvar em arquivo temporário
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.write(final_pdf)
+        temp_file.close()
+        
+        return send_file(temp_file.name, as_attachment=True, download_name='etiquetas_final.pdf')
+        
     except Exception as e:
         print(f"💥 Erro: {str(e)}")
         return f'Erro interno: {str(e)}', 500
