@@ -22,80 +22,81 @@ def index():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZPL Generator - SKU Corrigido</title>
+    <title>ZPL Generator - Código do Produto</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
         .header { text-align: center; margin-bottom: 30px; }
         .logo { font-size: 48px; }
-        .final-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
-        .fixes { background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745; }
+        .final-card { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+        .fixes { background: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107; }
         .fix-item { display: flex; align-items: center; margin: 10px 0; }
         .fix-icon { font-size: 20px; margin-right: 10px; }
         textarea { width: 100%; height: 200px; padding: 15px; font-family: monospace; border: 2px solid #e9ecef; border-radius: 8px; }
-        button { width: 100%; padding: 20px; font-size: 18px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px 0; font-weight: bold; }
-        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4); }
+        button { width: 100%; padding: 20px; font-size: 18px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px 0; font-weight: bold; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4); }
         button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
         .result { margin-top: 20px; padding: 20px; border-radius: 8px; }
-        .success { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
-        .error { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
-        .processing { background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%); color: white; }
+        .success { background: linear-gradient(135deg, #00b894 0%, #00cec9 100%); color: white; }
+        .error { background: linear-gradient(135deg, #d63031 0%, #e17055 100%); color: white; }
+        .processing { background: linear-gradient(135deg, #0984e3 0%, #6c5ce7 100%); color: white; }
         .progress-container { display: none; margin-top: 20px; }
         .progress { background: #e9ecef; border-radius: 10px; height: 30px; margin: 15px 0; overflow: hidden; }
-        .progress-bar { background: linear-gradient(90deg, #28a745 0%, #20c997 100%); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: 0%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
-        .stats { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #28a745; }
+        .progress-bar { background: linear-gradient(90deg, #ff6b6b 0%, #ee5a24 100%); height: 100%; border-radius: 10px; transition: width 0.5s ease; width: 0%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .stats { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ff6b6b; }
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .stat-item { text-align: center; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #28a745; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #ff6b6b; }
         .stat-label { font-size: 12px; color: #6c757d; text-transform: uppercase; }
-        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #28a745; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #ff6b6b; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .phase { background: #fff; padding: 10px 15px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #28a745; }
+        .phase { background: #fff; padding: 10px 15px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #ff6b6b; }
         .phase.active { border-left-color: #ffc107; background: #fff3cd; }
-        .phase.completed { border-left-color: #28a745; background: #d4edda; }
+        .phase.completed { border-left-color: #00b894; background: #d1f2eb; }
+        .debug-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">🏷️</div>
         <h1>ZPL Generator</h1>
-        <p>SKU Corrigido - Detecção Aprimorada</p>
+        <p>Detecção por Código do Produto</p>
     </div>
     
     <div class="final-card">
-        <h2>🔧 Versão com SKU Corrigido</h2>
-        <p><strong>Detecção por código de barras</strong> • <strong>Separadores precisos</strong> • <strong>PDF único</strong></p>
+        <h2>🎯 Detecção Corrigida</h2>
+        <p><strong>Código do produto</strong> • <strong>VGYP85662 → KYFI92509</strong> • <strong>Separadores precisos</strong></p>
     </div>
     
     <div class="fixes">
-        <h3>✅ Correções Aplicadas:</h3>
+        <h3>🔧 Nova Detecção:</h3>
         <div class="fix-item">
-            <div class="fix-icon">🔍</div>
-            <div><strong>Detecção por Código de Barras:</strong> Usa primeira linha como referência principal</div>
-        </div>
-        <div class="fix-item">
-            <div class="fix-icon">📏</div>
-            <div><strong>Separadores Precisos:</strong> Apenas quando código de barras muda</div>
-        </div>
-        <div class="fix-item">
-            <div class="fix-icon">🧹</div>
-            <div><strong>Limpeza de Duplicatas:</strong> Remove separadores desnecessários</div>
+            <div class="fix-icon">🎯</div>
+            <div><strong>Código do Produto:</strong> Segunda linha (VGYP85662, KYFI92509, etc.)</div>
         </div>
         <div class="fix-item">
             <div class="fix-icon">📊</div>
-            <div><strong>Log Detalhado:</strong> Mostra exatamente onde separa</div>
+            <div><strong>Múltiplos Padrões:</strong> ^FD, ^A0, texto após código de barras</div>
+        </div>
+        <div class="fix-item">
+            <div class="fix-icon">📏</div>
+            <div><strong>Separador Preciso:</strong> Apenas quando código do produto muda</div>
+        </div>
+        <div class="fix-item">
+            <div class="fix-icon">🔍</div>
+            <div><strong>Debug Detalhado:</strong> Mostra cada código detectado</div>
         </div>
     </div>
     
     <form id="zplForm">
-        <label for="zplCode"><strong>Cole seu código ZPL completo (detecção corrigida):</strong></label><br><br>
+        <label for="zplCode"><strong>Cole seu código ZPL (detecção por código do produto):</strong></label><br><br>
         <textarea id="zplCode" placeholder="^XA^CI28
 ^LH0,0
-^FO30,15^BY2,,0^BCN,54,N,N^FDTEST123^FS
-^FO105,75^A0N,20,25^FH^FDTEST123^FS
+^FO30,15^BY2,,0^BCN,54,N,N^FDVGYP85662^FS
+^FO105,75^A0N,20,25^FH^FDVGYP85662^FS
 ^XZ
 
-Detecção corrigida - separadores precisos!"></textarea><br><br>
-        <button type="submit">🔧 Gerar PDF com SKU Corrigido</button>
+Agora detecta VGYP85662 → KYFI92509 corretamente!"></textarea><br><br>
+        <button type="submit">🎯 Gerar PDF com Código do Produto</button>
     </form>
     
     <div class="progress-container" id="progressContainer">
@@ -128,11 +129,16 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
         </div>
         
         <div id="phases">
-            <div class="phase" id="phase1">🔍 Fase 1: Analisando códigos de barras</div>
-            <div class="phase" id="phase2">📏 Fase 2: Detectando mudanças de produto</div>
+            <div class="phase" id="phase1">🔍 Fase 1: Analisando códigos do produto</div>
+            <div class="phase" id="phase2">📏 Fase 2: Detectando mudanças VGYP→KYFI</div>
             <div class="phase" id="phase3">⚡ Fase 3: Processando com separadores</div>
             <div class="phase" id="phase4">📄 Fase 4: Mesclando PDF único</div>
-            <div class="phase" id="phase5">✅ Fase 5: Finalizando com SKU corrigido</div>
+            <div class="phase" id="phase5">✅ Fase 5: PDF com separadores precisos</div>
+        </div>
+        
+        <div class="debug-info" id="debugInfo" style="display: none;">
+            <strong>🔍 Debug - Códigos Detectados:</strong><br>
+            <div id="debugContent"></div>
         </div>
     </div>
     
@@ -170,6 +176,12 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
             
             document.getElementById('statusTitle').textContent = data.status || 'Processando...';
             updatePhase(data.phase || 1);
+            
+            // Mostrar debug se disponível
+            if (data.debug_info) {
+                document.getElementById('debugInfo').style.display = 'block';
+                document.getElementById('debugContent').innerHTML = data.debug_info.join('<br>');
+            }
         }
         
         function checkStatus() {
@@ -188,12 +200,12 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
                             updatePhase(5, 'completed');
                             document.getElementById('result').innerHTML = `
                                 <div class="result success">
-                                    <h3>🎉 PDF com SKU Corrigido Gerado!</h3>
+                                    <h3>🎉 PDF com Separadores Precisos!</h3>
                                     <p><strong>${data.total_blocks} blocos processados</strong> em ${((Date.now() - startTime) / 1000).toFixed(1)} segundos</p>
-                                    <p>📏 <strong>${data.separators_added || 0} separadores</strong> adicionados entre produtos diferentes</p>
-                                    <p>🔍 <strong>Detecção por código de barras</strong> - Separadores precisos!</p>
+                                    <p>📏 <strong>${data.separators_added || 0} separadores</strong> entre códigos diferentes</p>
+                                    <p>🎯 <strong>Detecção por código do produto</strong> - VGYP85662 → KYFI92509</p>
                                     <button onclick="downloadPdf('${processingId}')" style="margin-top: 15px;">
-                                        📥 Baixar PDF Corrigido
+                                        📥 Baixar PDF com Separadores Precisos
                                     </button>
                                 </div>
                             `;
@@ -207,7 +219,7 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
                         }
                         
                         document.querySelector('button[type="submit"]').disabled = false;
-                        document.querySelector('button[type="submit"]').textContent = '🔧 Gerar PDF com SKU Corrigido';
+                        document.querySelector('button[type="submit"]').textContent = '🎯 Gerar PDF com Código do Produto';
                     }
                 })
                 .catch(error => {
@@ -233,7 +245,7 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
             const progressContainer = document.getElementById('progressContainer');
             
             button.disabled = true;
-            button.textContent = '⏳ Iniciando correção de SKU...';
+            button.textContent = '⏳ Detectando códigos do produto...';
             progressContainer.style.display = 'block';
             result.innerHTML = '';
             
@@ -241,7 +253,7 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
             updatePhase(1);
             
             try {
-                const response = await fetch('/generate-corrected', {
+                const response = await fetch('/generate-product-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ zpl: zplCode })
@@ -260,7 +272,7 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
             } catch (error) {
                 result.innerHTML = `<div class="result error">❌ Erro: ${error.message}</div>`;
                 button.disabled = false;
-                button.textContent = '🔧 Gerar PDF com SKU Corrigido';
+                button.textContent = '🎯 Gerar PDF com Código do Produto';
                 progressContainer.style.display = 'none';
             }
         });
@@ -268,50 +280,67 @@ Detecção corrigida - separadores precisos!"></textarea><br><br>
 </body>
 </html>'''
 
-def extract_barcode_from_block(zpl_block):
-    """Extrai código de barras do bloco ZPL (primeira linha de dados)"""
-    # Procurar por padrões de código de barras
+def extract_product_code_from_block(zpl_block):
+    """Extrai código do produto (segunda linha) do bloco ZPL"""
+    # Padrões para encontrar o código do produto (não o código de barras)
     patterns = [
-        r'\^FD([A-Za-z0-9]+)\^FS',  # Padrão ^FD...^FS
-        r'\^BCN.*?\^FD([A-Za-z0-9]+)\^FS',  # Código de barras específico
-        r'\^BY.*?\^FD([A-Za-z0-9]+)\^FS'   # Outro padrão de código de barras
+        # Padrão ^FD seguido de código alfanumérico (segunda ocorrência)
+        r'\^FD([A-Za-z0-9]{6,12})\^FS',
+        # Padrão ^A0 seguido de ^FD com código
+        r'\^A0.*?\^FD([A-Za-z0-9]{6,12})\^FS',
+        # Padrão específico para códigos como VGYP85662
+        r'\^FD([A-Z]{4}[0-9]{5})\^FS',
+        # Padrão mais geral para códigos mistos
+        r'\^FD([A-Z]{2,4}[A-Z0-9]{4,8})\^FS'
     ]
+    
+    all_codes = []
     
     for pattern in patterns:
         matches = re.findall(pattern, zpl_block, re.IGNORECASE)
-        if matches:
-            # Retornar o primeiro código encontrado (geralmente o código de barras)
-            return matches[0].strip()
+        all_codes.extend(matches)
+    
+    # Remover duplicatas mantendo ordem
+    unique_codes = []
+    for code in all_codes:
+        if code not in unique_codes:
+            unique_codes.append(code)
+    
+    # Retornar o segundo código encontrado (primeira é geralmente código de barras)
+    if len(unique_codes) >= 2:
+        return unique_codes[1].upper()  # Segunda ocorrência
+    elif len(unique_codes) == 1:
+        # Se só tem um, verificar se parece com código de produto
+        code = unique_codes[0].upper()
+        if len(code) >= 6 and any(c.isalpha() for c in code) and any(c.isdigit() for c in code):
+            return code
     
     return None
 
-def extract_product_info(zpl_block):
-    """Extrai informações do produto para debug"""
-    barcode = extract_barcode_from_block(zpl_block)
-    
-    # Tentar extrair nome do produto (segunda linha geralmente)
-    text_matches = re.findall(r'\^FD([^\\^]+)\^FS', zpl_block)
-    product_name = text_matches[1] if len(text_matches) > 1 else "Produto desconhecido"
+def extract_all_info_from_block(zpl_block):
+    """Extrai todas as informações do bloco para debug"""
+    all_fd_matches = re.findall(r'\^FD([^\\^]+)\^FS', zpl_block)
+    product_code = extract_product_code_from_block(zpl_block)
     
     return {
-        'barcode': barcode,
-        'product_name': product_name[:30] + "..." if len(product_name) > 30 else product_name
+        'product_code': product_code,
+        'all_codes': all_fd_matches[:3],  # Primeiros 3 códigos
+        'block_preview': zpl_block[:100] + "..." if len(zpl_block) > 100 else zpl_block
     }
 
-def create_separator_with_info(old_product, new_product):
-    """Cria separador com informações dos produtos"""
+def create_product_separator(old_code, new_code):
+    """Cria separador entre códigos de produto diferentes"""
     return f"""^XA
 ^LH0,0
-^FO0,0^GB800,250,2^FS
-^FO400,50^A0N,16,16^FH^FD--- MUDANÇA DE PRODUTO ---^FS
-^FO400,100^A0N,12,12^FH^FDAnterior: {old_product['barcode'] or 'N/A'}^FS
-^FO400,130^A0N,12,12^FH^FDNovo: {new_product['barcode'] or 'N/A'}^FS
-^FO400,180^A0N,10,10^FH^FD{old_product['product_name']}^FS
-^FO400,200^A0N,10,10^FH^FD{new_product['product_name']}^FS
+^FO0,0^GB800,250,3^FS
+^FO400,60^A0N,18,18^FH^FD=== MUDANÇA DE PRODUTO ===^FS
+^FO400,100^A0N,14,14^FH^FDAnterior: {old_code or 'N/A'}^FS
+^FO400,130^A0N,14,14^FH^FDNovo: {new_code or 'N/A'}^FS
+^FO400,170^A0N,12,12^FH^FD--- SEPARADOR ---^FS
 ^XZ"""
 
-@app.route('/generate-corrected', methods=['POST'])
-def generate_corrected():
+@app.route('/generate-product-code', methods=['POST'])
+def generate_product_code():
     try:
         data = request.get_json()
         zpl_code = data.get('zpl', '').strip()
@@ -332,11 +361,12 @@ def generate_corrected():
             'status': 'Iniciando...',
             'phase': 1,
             'error': None,
-            'pdf_path': None
+            'pdf_path': None,
+            'debug_info': []
         }
         
         # Iniciar processamento em thread separada
-        thread = threading.Thread(target=process_corrected_async, args=(processing_id, zpl_code))
+        thread = threading.Thread(target=process_product_code_async, args=(processing_id, zpl_code))
         thread.daemon = True
         thread.start()
         
@@ -360,16 +390,17 @@ def download_pdf(processing_id):
     if not status or not status.get('success') or not status.get('pdf_path'):
         return jsonify({'error': 'PDF não encontrado'}), 404
     
-    return send_file(status['pdf_path'], as_attachment=True, download_name='etiquetas_sku_corrigido.pdf')
+    return send_file(status['pdf_path'], as_attachment=True, download_name='etiquetas_codigo_produto.pdf')
 
-def process_corrected_async(processing_id, zpl_code):
-    """Processa com detecção corrigida de SKU"""
+def process_product_code_async(processing_id, zpl_code):
+    """Processa com detecção por código do produto"""
     try:
         status = processing_status[processing_id]
+        debug_info = []
         
-        # Fase 1: Analisar códigos de barras
+        # Fase 1: Analisar códigos do produto
         status.update({
-            'status': 'Analisando códigos de barras...',
+            'status': 'Analisando códigos do produto...',
             'phase': 1
         })
         
@@ -381,45 +412,54 @@ def process_corrected_async(processing_id, zpl_code):
             if not zpl_code.endswith('^XZ'):
                 zpl_code = zpl_code + '\n^XZ'
             zpl_blocks = [zpl_code]
-
-
-
         
         status['total_blocks'] = len(zpl_blocks)
         
-        # Fase 2: Detectar mudanças de produto por código de barras
+        # Fase 2: Detectar mudanças de código do produto
         status.update({
-            'status': 'Detectando mudanças de produto...',
+            'status': 'Detectando mudanças de código do produto...',
             'phase': 2
         })
         
         blocks_with_separators = []
-        last_product = None
+        last_product_code = None
         separators_added = 0
         
-        print(f"🔍 === ANÁLISE DE PRODUTOS ===")
+        debug_info.append("🔍 === ANÁLISE DE CÓDIGOS DO PRODUTO ===")
         
         for i, block in enumerate(zpl_blocks):
-            current_product = extract_product_info(block)
+            block_info = extract_all_info_from_block(block)
+            current_product_code = block_info['product_code']
             
-            print(f"📦 Bloco {i+1}: {current_product['barcode']} - {current_product['product_name']}")
+            debug_line = f"📦 Bloco {i+1}: {current_product_code or 'N/A'} | Todos: {block_info['all_codes']}"
+            debug_info.append(debug_line)
+            print(debug_line)
             
-            # Se mudou de código de barras, adicionar separador
-            if (last_product is not None and 
-                current_product['barcode'] is not None and 
-                last_product['barcode'] is not None and
-                current_product['barcode'] != last_product['barcode']):
+            # Se mudou de código do produto, adicionar separador
+            if (last_product_code is not None and 
+                current_product_code is not None and
+                current_product_code != last_product_code):
                 
-                print(f"🔄 MUDANÇA DETECTADA: {last_product['barcode']} → {current_product['barcode']}")
-                separator = create_separator_with_info(last_product, current_product)
+                change_line = f"🔄 MUDANÇA: {last_product_code} → {current_product_code}"
+                debug_info.append(change_line)
+                print(change_line)
+                
+                separator = create_product_separator(last_product_code, current_product_code)
                 blocks_with_separators.append(separator)
                 separators_added += 1
             
             blocks_with_separators.append(block)
-            last_product = current_product
+            if current_product_code:
+                last_product_code = current_product_code
         
-        print(f"✅ Total de separadores adicionados: {separators_added}")
-        status['separators_added'] = separators_added
+        final_line = f"✅ Total de separadores: {separators_added}"
+        debug_info.append(final_line)
+        print(final_line)
+        
+        status.update({
+            'separators_added': separators_added,
+            'debug_info': debug_info
+        })
         
         # Fase 3: Processar lotes
         status.update({
@@ -430,7 +470,7 @@ def process_corrected_async(processing_id, zpl_code):
         pdf_merger = PdfMerger()
         temp_files = []
         
-        batch_size = 5  # Lotes pequenos para estabilidade
+        batch_size = 5
         total_batches = (len(blocks_with_separators) + batch_size - 1) // batch_size
         
         for i in range(0, len(blocks_with_separators), batch_size):
@@ -467,7 +507,7 @@ def process_corrected_async(processing_id, zpl_code):
                         break
                         
                 except Exception as e:
-                    if attempt == 2:  # Última tentativa
+                    if attempt == 2:
                         print(f"Erro no lote {batch_num}: {str(e)}")
                 
                 if attempt < 2:
@@ -476,11 +516,11 @@ def process_corrected_async(processing_id, zpl_code):
             if not success:
                 print(f"Lote {batch_num} falhou após 3 tentativas")
             
-            time.sleep(0.5)  # Pausa entre lotes
+            time.sleep(0.5)
         
         # Fase 4: Mesclar PDFs
         status.update({
-            'status': 'Mesclando PDFs com separadores...',
+            'status': 'Mesclando PDFs...',
             'phase': 4,
             'processed_blocks': len(blocks_with_separators)
         })
@@ -488,9 +528,9 @@ def process_corrected_async(processing_id, zpl_code):
         if not temp_files:
             raise Exception('Nenhum lote processado com sucesso')
         
-        # Fase 5: Finalizar PDF único
+        # Fase 5: Finalizar
         status.update({
-            'status': 'Finalizando PDF com SKU corrigido...',
+            'status': 'Finalizando PDF com separadores precisos...',
             'phase': 5
         })
         
@@ -514,15 +554,15 @@ def process_corrected_async(processing_id, zpl_code):
         status.update({
             'completed': True,
             'success': True,
-            'status': f'PDF corrigido gerado! {separators_added} separadores adicionados.',
+            'status': f'PDF com separadores precisos! {separators_added} mudanças detectadas.',
             'phase': 5,
             'pdf_path': final_temp.name
         })
         
-        print(f"🎉 PDF FINAL CORRIGIDO: {len(zpl_blocks)} blocos + {separators_added} separadores")
+        print(f"🎉 PDF FINAL: {len(zpl_blocks)} blocos + {separators_added} separadores por código do produto")
         
     except Exception as e:
-        print(f"💥 Erro no processamento: {str(e)}")
+        print(f"💥 Erro: {str(e)}")
         status.update({
             'completed': True,
             'success': False,
